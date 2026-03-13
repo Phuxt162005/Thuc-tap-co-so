@@ -33,6 +33,11 @@ export default function Sales({ products, setProducts }) {
     }
   };
 
+  // xóa sản phẩm khỏi giỏ hàng
+  const removeFromCart = (id) => {
+    setCart(cart.filter((i) => i.id !== id));
+  };
+
   // tính tiền
   const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
@@ -53,6 +58,8 @@ export default function Sales({ products, setProducts }) {
       total,
       date: new Date().toLocaleDateString(),
     };
+
+    setOrders([...orders, newOrder]);
 
     // cập nhật
     const updatedProducts = products.map((p) => {
@@ -77,7 +84,9 @@ export default function Sales({ products, setProducts }) {
   );
 
   return (
-    <div style={{ display: "flex", gap: "20px" }}>
+    <div
+      style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "40px" }}
+    >
       <div style={{ flex: 2 }}>
         <input
           placeholder="Tìm sản phẩm"
@@ -86,7 +95,7 @@ export default function Sales({ products, setProducts }) {
         />
 
         {filteredProducts.map((p) => (
-          <div key={p.id}>
+          <div key={p.id} style={productCard}>
             {p.name} - {p.price}
             <button onClick={() => addToCart(p)}>Thêm</button>
           </div>
@@ -99,6 +108,7 @@ export default function Sales({ products, setProducts }) {
         {cart.map((i) => (
           <div key={i.id}>
             {i.name} x {i.quantity}
+            <button onClick={() => removeFromCart(i.id)}>Xóa</button>
           </div>
         ))}
         <h4>Tổng: {total}</h4>
@@ -117,3 +127,10 @@ export default function Sales({ products, setProducts }) {
     </div>
   );
 }
+
+const productCard = {
+  border: "1px solid #444",
+  padding: "10px",
+  margin: "10px",
+  borderRadius: "5px",
+};

@@ -7,6 +7,8 @@ export default function Product({ products, setProducts }) {
 
   // Thêm sản phẩm mới
   const addProduct = () => {
+    if (!name || !price || !stock) return;
+
     const newProduct = {
       id: Date.now(),
       name,
@@ -22,7 +24,7 @@ export default function Product({ products, setProducts }) {
   };
 
   // Xóa sản phẩm
-  const remove = (id) => {
+  const removeProduct = (id) => {
     setProducts(products.filter((p) => p.id !== id));
   };
 
@@ -54,12 +56,38 @@ export default function Product({ products, setProducts }) {
       <button onClick={addProduct}>Thêm</button>
       <hr />
 
-      {products.map((p) => (
-        <div key={p.id}>
-          {p.name} - {p.price} VNĐ - Kho: {p.stock}
-          <button onClick={() => remove(p.id)}>Xóa</button>
-        </div>
-      ))}
+      <table
+        style={{
+          width: "100%",
+          marginTop: "20px",
+          borderCollapse: "collapse",
+        }}
+      >
+        <thead style={{ background: "#444" }}>
+          <tr>
+            <th>Tên</th>
+            <th>Giá</th>
+            <th>Tồn kho</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {products.map((p) => (
+            <td
+              key={p.id}
+              style={{ padding: "10px", borderBottom: "1px solid #333" }}
+            >
+              <tv>{p.name}</tv>
+              <tv>{p.price}</tv>
+              <tv>{p.stock}</tv>
+              <tv>
+                <button onClick={() => removeProduct(p.id)}>Xóa</button>
+              </tv>
+            </td>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

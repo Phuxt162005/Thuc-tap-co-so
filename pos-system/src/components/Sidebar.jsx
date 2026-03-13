@@ -4,13 +4,32 @@ export default function Sidebar({ setActivePage }) {
       <h2>POS MENU</h2>
 
       <ul style={menu}>
-        <li onClick={() => setActivePage("dashboard")}>Dashboard</li>
-        <li onClick={() => setActivePage("sales")}>Bán hàng</li>
-        <li onClick={() => setActivePage("product")}>Sản phẩm</li>
-        <li onClick={() => setActivePage("inventory")}>Kho</li>
-        <li onClick={() => setActivePage("employee")}>Nhân viên</li>
-        <li onClick={() => setActivePage("branch")}>Chi nhánh</li>
-        <li onClick={() => setActivePage("report")}>Báo cáo</li>
+        <li
+          style={menuItem}
+          onMouseOver={(e) => (e.target.style.background = "#1565c0")}
+          onMouseOut={(e) => (e.target.style.background = "transparent")}
+          onClick={() => setActivePage("dashboard")}
+        >
+          Dashboard
+        </li>
+        <li style={menuItem} onClick={() => setActivePage("sales")}>
+          Bán hàng
+        </li>
+        <li style={menuItem} onClick={() => setActivePage("product")}>
+          Sản phẩm
+        </li>
+        <li style={menuItem} onClick={() => setActivePage("inventory")}>
+          Kho
+        </li>
+        <li style={menuItem} onClick={() => setActivePage("employee")}>
+          Nhân viên
+        </li>
+        <li style={menuItem} onClick={() => setActivePage("branch")}>
+          Chi nhánh
+        </li>
+        <li style={menuItem} onClick={() => setActivePage("report")}>
+          Báo cáo
+        </li>
       </ul>
     </div>
   );
@@ -28,4 +47,10 @@ const menu = {
   listStyle: "none",
   padding: 0,
   marginTop: "20px",
+};
+
+const menuItem = {
+  padding: "10px",
+  cursor: "pointer",
+  borderRadius: "5px",
 };

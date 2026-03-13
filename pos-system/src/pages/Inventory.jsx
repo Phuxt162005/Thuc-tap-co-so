@@ -39,11 +39,11 @@ export default function Inventory({ products, setProducts }) {
 
       <hr />
 
-      <h3>Tồn kho</h3>
+      <h3>Kho hàng</h3>
 
       {products.map((p) => (
         <div key={p.id}>
-          {p.name} - Kho: {p.stock}
+          {p.name} - Tồn kho: {p.stock}
         </div>
       ))}
     </div>

@@ -39,6 +39,23 @@ export default function Dashboard() {
   // tổng doanh thu
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
 
+  // top sản phẩm bán chạy
+  const topProducts = {};
+
+  orders.forEach((order) => {
+    order.items.forEach((item) => {
+      if (!topProducts[item.name]) {
+        topProducts[item.name] = 0;
+      }
+      topProducts[item.name] += item.quantity;
+    });
+  });
+
+  // sắp xếp sản phẩm
+  const sortedProducts = Object.entries(topProducts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
   // render content
   const renderContent = () => {
     switch (activePage) {
@@ -75,6 +92,18 @@ export default function Dashboard() {
                 <h3>Đơn hàng: </h3>
                 <p>{orders.length}</p>
               </div>
+
+              <div style={{ marginTop: "40px" }}>
+                <h3>Top sản phẩm bán chạy</h3>
+
+                {sortedProducts.length === 0 && <p>Chưa có dữ liệu</p>}
+
+                {sortedProducts.map(([name, qty]) => (
+                  <div key={name}>
+                    {name} - Đã bán: {qty}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -96,12 +125,17 @@ export default function Dashboard() {
 const cardContainer = {
   display: "flex",
   gap: "20px",
+  marginTop: "20px",
+  flexWrap: "wrap",
 };
 
 const card = {
   background: "#f5f5f5",
-  padding: "20px",
-  borderRadius: "8px",
-  width: "200px",
+  fontSize: "18px",
+  color: "white",
+  padding: "25px",
+  borderRadius: "10px",
+  width: "220px",
   textAlign: "center",
+  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
 };
