@@ -1,15 +1,6 @@
 import { useState, useEffect } from "react";
 
-export default function Report() {
-  const [orders, setOrders] = useState([]);
-
-  useEffect(() => {
-    const savedOrders = localStorage.getItem("orders");
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    }
-  }, []);
-
+export default function Report({ orders }) {
   // doanh thu
   const revenue = orders.reduce((sum, o) => sum + o.total, 0);
 
@@ -22,24 +13,35 @@ export default function Report() {
 
       <h3>Lịch sử bán hàng</h3>
 
-      {orders.map((o) => (
-        <div key={o.id} style={orderCard}>
-          <p>Ngày: {o.date}</p>
-          <p>Tổng tiền: {o.total.toLocaleString()} VNĐ</p>
+      {orders.length === 0 ? (
+        <p style={empty}>Chưa có đơn hàng</p>
+      ) : (
+        orders.map((o) => (
+          <div key={o.id} style={orderCard}>
+            <p>Ngày: {o.date}</p>
+            <p>Tổng tiền: {o.total.toLocaleString()} VNĐ</p>
 
-          {o.items.map((item) => (
-            <div key={item.id}>
-              - {item.name} x {item.quantity}
-            </div>
-          ))}
-        </div>
-      ))}
+            {o.items.map((item) => (
+              <div key={item.id}>
+                - {item.name} x {item.quantity}
+              </div>
+            ))}
+          </div>
+        ))
+      )}
     </div>
   );
 }
 
-const orderCart = {
+const orderCard = {
   border: "1px solid #ddd",
-  padding: "10px",
+  padding: "12px",
   marginTop: "10px",
+  borderRadius: "6px",
+  background: "#fff",
+};
+
+const empty = {
+  marginTop: "10px",
+  color: "#777",
 };
