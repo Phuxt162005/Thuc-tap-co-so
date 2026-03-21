@@ -1,14 +1,20 @@
 import bgrSidebar from "../assets/img/back-ground-login.jpg";
 
-export default function Sidebar({ activePage, setActivePage, setIsLogin }) {
-  return (
-    <div style={sidebar}>
-      {/* phần trên */}
-      <div>
-        <h2>MENU</h2>
-
-        <ul style={menu}>
-          {[
+export default function Sidebar({
+  activePage,
+  setActivePage,
+  setIsLogin,
+  role,
+  setRole,
+}) {
+  const menuItems =
+    role === "admin"
+      ? [
+          { key: "employee", label: "Nhân viên" },
+          { key: "branch", label: "Chi nhánh" },
+        ]
+      : role === "manager"
+        ? [
             { key: "dashboard", label: "Thông tin bán hàng" },
             { key: "sales", label: "Bán hàng" },
             { key: "product", label: "Sản phẩm" },
@@ -16,7 +22,22 @@ export default function Sidebar({ activePage, setActivePage, setIsLogin }) {
             { key: "employee", label: "Nhân viên" },
             { key: "branch", label: "Chi nhánh" },
             { key: "report", label: "Báo cáo" },
-          ].map((item) => (
+          ]
+        : [
+            { key: "dashboard", label: "Thông tin bán hàng" },
+            { key: "sales", label: "Bán hàng" },
+            { key: "product", label: "Sản phẩm" },
+            { key: "inventory", label: "Kho" },
+            { key: "report", label: "Báo cáo" },
+          ];
+  return (
+    <div style={sidebar}>
+      {/* phần trên */}
+      <div>
+        <h2>MENU</h2>
+
+        <ul style={menu}>
+          {menuItems.map((item) => (
             <li
               key={item.key}
               style={{
@@ -35,7 +56,14 @@ export default function Sidebar({ activePage, setActivePage, setIsLogin }) {
       </div>
 
       {/* logout ở dưới */}
-      <button style={logoutBtn} onClick={() => setIsLogin(false)}>
+      <button
+        style={logoutBtn}
+        onClick={() => {
+          localStorage.removeItem("role");
+          setRole("");
+          setIsLogin(false);
+        }}
+      >
         Đăng xuất
       </button>
     </div>

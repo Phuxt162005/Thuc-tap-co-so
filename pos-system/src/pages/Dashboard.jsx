@@ -7,7 +7,7 @@ import Inventory from "./Inventory";
 import Employee from "./Employee";
 import Branch from "./Branch";
 
-export default function Dashboard({ setIsLogin }) {
+export default function Dashboard({ setIsLogin, role, setRole }) {
   const [activePage, setActivePage] = useState("dashboard");
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -102,15 +102,28 @@ export default function Dashboard({ setIsLogin }) {
       case "inventory":
         return <Inventory products={products} setProducts={setProducts} />;
       case "employee":
+        if (role !== "admin" && role !== "manager") {
+          return <p>Không có quyền truy cập</p>;
+        }
         return (
           <Employee
             employees={employees}
             setEmployees={setEmployees}
             branches={branches}
+            setBranches={setBranches}
           />
         );
       case "branch":
-        return <Branch branches={branches} setBranches={setBranches} />;
+        if (role !== "admin" && role !== "manager") {
+          return <p>Không có quyền truy cập</p>;
+        }
+        return (
+          <Branch
+            branches={branches}
+            setBranches={setBranches}
+            employees={employees}
+          />
+        );
 
       default:
         return (
@@ -161,6 +174,8 @@ export default function Dashboard({ setIsLogin }) {
         activePage={activePage}
         setActivePage={setActivePage}
         setIsLogin={setIsLogin}
+        role={role}
+        setRole={setRole}
       />
 
       <div style={{ flex: 1, padding: "20px" }}>{renderContent()}</div>

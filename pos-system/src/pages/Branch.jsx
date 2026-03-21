@@ -1,25 +1,39 @@
 import { useState } from "react";
 
-export default function Branch({ branches, setBranches }) {
+export default function Branch({ branches, setBranches, employees }) {
   const [name, setName] = useState("");
+  const [openDate, setOpenDate] = useState("");
 
+  // thêm chi nhánh
   const addBranch = () => {
-    if (!name.trim()) {
-      alert("Vui lòng nhập tên chi nhánh");
+    if (!name.trim() || !openDate) {
+      alert("Vui lòng nhập đầy đủ");
       return;
     }
 
     const newBranch = {
       id: Date.now(),
       name: name.trim(),
+      openDate,
     };
 
     setBranches((prev) => [...prev, newBranch]);
+
     setName("");
+    setOpenDate("");
   };
 
+  // xóa chi nhánh
   const removeBranch = (id) => {
     setBranches((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  // 1 chi nhánh có bao nhiêu nhân viên
+  const count = (branchId, role) => {
+    if (!employees) return 0;
+    return employees.filter(
+      (e) => e.branch === Number(branchId) && e.role === role,
+    ).length;
   };
 
   return (
@@ -34,6 +48,13 @@ export default function Branch({ branches, setBranches }) {
           onChange={(e) => setName(e.target.value)}
         />
 
+        <input
+          type="date"
+          style={input}
+          value={openDate}
+          onChange={(e) => setOpenDate(e.target.value)}
+        />
+
         <button style={addBtn} onClick={addBranch}>
           Thêm
         </button>
@@ -45,6 +66,8 @@ export default function Branch({ branches, setBranches }) {
         <thead>
           <tr>
             <th style={header}>Tên chi nhánh</th>
+            <th style={header}>Ngày mở</th>
+            <th style={header}>Nhân viên</th>
             <th style={header}>Action</th>
           </tr>
         </thead>
@@ -52,7 +75,7 @@ export default function Branch({ branches, setBranches }) {
         <tbody>
           {branches.length === 0 ? (
             <tr>
-              <td colSpan="2" style={empty}>
+              <td colSpan="4" style={empty}>
                 Chưa có chi nhánh
               </td>
             </tr>
@@ -60,6 +83,14 @@ export default function Branch({ branches, setBranches }) {
             branches.map((b) => (
               <tr key={b.id}>
                 <td style={cell}>{b.name}</td>
+                <td style={cell}>
+                  {new Date(b.openDate).toLocaleDateString("vi-VN")}
+                </td>
+
+                <td style={cell}>
+                  QL: {count(b.id, "Nhân viên quản lý")} <br />
+                  NV: {count(b.id, "Nhân viên bán hàng")}
+                </td>
 
                 <td style={cell}>
                   <button style={deleteBtn} onClick={() => removeBranch(b.id)}>

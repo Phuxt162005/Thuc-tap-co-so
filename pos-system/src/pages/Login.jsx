@@ -1,13 +1,23 @@
 import { useState } from "react";
 import backgrImg from "../assets/img/back-ground-login.jpg";
 
-export default function Login({ setIsLogin }) {
+export default function Login({ setIsLogin, setRole }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   // xử lý nhập tài khoản mật khẩu
   const handleLogin = () => {
-    if (username === "admin" && password === "123456") {
+    if (username === "admin" && password === "123") {
+      localStorage.setItem("role", "admin");
+      setRole("admin");
+      setIsLogin(true);
+    } else if (username === "nv" && password === "123") {
+      localStorage.setItem("role", "employee");
+      setRole("employee");
+      setIsLogin(true);
+    } else if (username === "manager" && password === "123") {
+      localStorage.setItem("role", "manager");
+      setRole("manager");
       setIsLogin(true);
     } else {
       alert("Sai tài khoản hoặc mật khẩu");
