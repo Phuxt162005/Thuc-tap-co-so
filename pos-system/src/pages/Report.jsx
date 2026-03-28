@@ -14,10 +14,10 @@ export default function Report({ orders }) {
       <h3>Lịch sử bán hàng</h3>
 
       {orders.length === 0 ? (
-        <p style={empty}>Chưa có đơn hàng</p>
+        <p className="empty">Chưa có đơn hàng</p>
       ) : (
         orders.map((o) => (
-          <div key={o.id} style={orderCard}>
+          <div key={o.id} className="order-card">
             <p>Ngày: {o.date}</p>
             <p>Tổng tiền: {o.total.toLocaleString()} VNĐ</p>
 
@@ -32,16 +32,3 @@ export default function Report({ orders }) {
     </div>
   );
 }
-
-const orderCard = {
-  border: "1px solid #ddd",
-  padding: "12px",
-  marginTop: "10px",
-  borderRadius: "6px",
-  background: "#fff",
-};
-
-const empty = {
-  marginTop: "10px",
-  color: "#777",
-};

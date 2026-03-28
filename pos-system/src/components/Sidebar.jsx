@@ -31,22 +31,16 @@ export default function Sidebar({
             { key: "report", label: "Báo cáo" },
           ];
   return (
-    <div style={sidebar}>
+    <div className="sidebar" style={{ backgroundImage: `url(${bgrSidebar})` }}>
       {/* phần trên */}
       <div>
         <h2>MENU</h2>
 
-        <ul style={menu}>
+        <ul className="menu">
           {menuItems.map((item) => (
             <li
               key={item.key}
-              style={{
-                ...menuItem,
-                background:
-                  activePage === item.key
-                    ? "rgba(255,255,255,0.15)"
-                    : "transparent",
-              }}
+              className={`menu-item ${activePage === item.key ? "active" : ""}`}
               onClick={() => setActivePage(item.key)}
             >
               {item.label}
@@ -57,7 +51,7 @@ export default function Sidebar({
 
       {/* logout ở dưới */}
       <button
-        style={logoutBtn}
+        className="logout-btn"
         onClick={() => {
           localStorage.removeItem("role");
           setRole("");
@@ -69,40 +63,3 @@ export default function Sidebar({
     </div>
   );
 }
-
-const sidebar = {
-  width: "220px",
-  height: "100vh",
-  display: "flex",
-  boxSizing: "border-box",
-  flexDirection: "column",
-  justifyContent: "space-between",
-  backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${bgrSidebar})`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  color: "white",
-  padding: "20px",
-};
-
-const logoutBtn = {
-  padding: "10px",
-  background: "#1976d2",
-  color: "white",
-  border: "none",
-  borderRadius: "8px",
-  cursor: "pointer",
-};
-
-const menu = {
-  listStyle: "none",
-  padding: 0,
-  marginTop: "20px",
-};
-
-const menuItem = {
-  padding: "12px",
-  cursor: "pointer",
-  borderRadius: "8px",
-  marginBottom: "5px",
-  transition: "0.2s",
-};

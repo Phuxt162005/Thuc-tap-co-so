@@ -27,9 +27,9 @@ export default function Inventory({ products, setProducts }) {
 
       <h3>Nhập hàng</h3>
 
-      <div style={importBox}>
+      <div className="form-box">
         <select
-          style={input}
+          className="input"
           value={id}
           onChange={(e) => setId(e.target.value)}
         >
@@ -43,46 +43,43 @@ export default function Inventory({ products, setProducts }) {
         </select>
 
         <input
-          style={input}
+          className="input"
           type="number"
           placeholder="Số lượng nhập"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
         />
 
-        <button style={importBtn} onClick={importStock}>
+        <button className="btn btn-primary" onClick={importStock}>
           Nhập kho
         </button>
       </div>
 
       <hr />
 
-      <table style={table}>
+      <table className="table">
         <thead>
           <tr>
-            <th style={{ ...header, width: "70%" }}>Tên sản phẩm</th>
-            <th style={{ ...header, width: "30%", textAlign: "center" }}>
-              Tồn kho
-            </th>
+            <th className="th">Tên sản phẩm</th>
+            <th className="th text-center">Tồn kho</th>
           </tr>
         </thead>
 
         <tbody>
           {products.length === 0 ? (
             <tr>
-              <td colSpan="2" style={empty}>
+              <td colSpan="2" className="td empty">
                 Chưa có sản phẩm
               </td>
             </tr>
           ) : (
             products.map((p) => (
               <tr key={p.id}>
-                <td style={cell}>{p.name}</td>
+                <td className="td">{p.name}</td>
 
                 <td
+                  className="td text-center"
                   style={{
-                    ...cell,
-                    textAlign: "center",
                     color:
                       p.stock === 0 ? "red" : p.stock < 10 ? "orange" : "green",
                   }}
@@ -97,48 +94,3 @@ export default function Inventory({ products, setProducts }) {
     </div>
   );
 }
-
-const importBox = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "20px",
-};
-
-const input = {
-  padding: "8px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-};
-
-const importBtn = {
-  background: "#1976d2",
-  color: "white",
-  border: "none",
-  padding: "8px 15px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  marginTop: "20px",
-  tableLayout: "fixed",
-};
-
-const header = {
-  padding: "12px",
-  borderBottom: "2px solid #ddd",
-  textAlign: "left",
-};
-
-const cell = {
-  padding: "12px",
-  borderBottom: "1px solid #eee",
-};
-
-const empty = {
-  textAlign: "center",
-  padding: "30px",
-  color: "#777",
-};

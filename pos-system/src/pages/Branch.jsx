@@ -32,7 +32,7 @@ export default function Branch({ branches, setBranches, employees }) {
   const count = (branchId, role) => {
     if (!employees) return 0;
     return employees.filter(
-      (e) => e.branch === Number(branchId) && e.role === role,
+      (e) => Number(e.branch) === Number(branchId) && e.role === role,
     ).length;
   };
 
@@ -40,60 +40,63 @@ export default function Branch({ branches, setBranches, employees }) {
     <div>
       <h2>Chi nhánh</h2>
 
-      <div style={formBox}>
+      <div className="form-box">
         <input
-          style={input}
+          className="input"
           placeholder="Tên chi nhánh"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
         <input
+          className="input"
           type="date"
-          style={input}
           value={openDate}
           onChange={(e) => setOpenDate(e.target.value)}
         />
 
-        <button style={addBtn} onClick={addBranch}>
+        <button className="btn btn-primary" onClick={addBranch}>
           Thêm
         </button>
       </div>
 
       <hr />
 
-      <table style={table}>
+      <table className="table">
         <thead>
           <tr>
-            <th style={header}>Tên chi nhánh</th>
-            <th style={header}>Ngày mở</th>
-            <th style={header}>Nhân viên</th>
-            <th style={header}>Action</th>
+            <th className="th">Tên chi nhánh</th>
+            <th className="th">Ngày mở</th>
+            <th className="th">Nhân viên</th>
+            <th className="th">Action</th>
           </tr>
         </thead>
 
         <tbody>
           {branches.length === 0 ? (
             <tr>
-              <td colSpan="4" style={empty}>
+              <td className="td empty" colSpan="4">
                 Chưa có chi nhánh
               </td>
             </tr>
           ) : (
             branches.map((b) => (
               <tr key={b.id}>
-                <td style={cell}>{b.name}</td>
-                <td style={cell}>
+                <td className="td">{b.name}</td>
+                <td className="td">
                   {new Date(b.openDate).toLocaleDateString("vi-VN")}
                 </td>
 
-                <td style={cell}>
+                <td className="td">
                   QL: {count(b.id, "Nhân viên quản lý")} <br />
                   NV: {count(b.id, "Nhân viên bán hàng")}
                 </td>
 
-                <td style={cell}>
-                  <button style={deleteBtn} onClick={() => removeBranch(b.id)}>
+                <td className="td">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => removeBranch(b.id)}
+                  >
                     Xóa
                   </button>
                 </td>
@@ -105,56 +108,3 @@ export default function Branch({ branches, setBranches, employees }) {
     </div>
   );
 }
-
-const formBox = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "20px",
-};
-
-const input = {
-  padding: "8px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-};
-
-const addBtn = {
-  background: "#1976d2",
-  color: "white",
-  border: "none",
-  padding: "8px 15px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const deleteBtn = {
-  background: "#e53935",
-  color: "white",
-  border: "none",
-  padding: "5px 10px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  marginTop: "20px",
-};
-
-const header = {
-  padding: "12px",
-  borderBottom: "2px solid #ddd",
-  textAlign: "left",
-};
-
-const cell = {
-  padding: "12px",
-  borderBottom: "1px solid #eee",
-};
-
-const empty = {
-  textAlign: "center",
-  padding: "30px",
-  color: "#777",
-};

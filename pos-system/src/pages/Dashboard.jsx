@@ -8,13 +8,18 @@ import Employee from "./Employee";
 import Branch from "./Branch";
 
 export default function Dashboard({ setIsLogin, role, setRole }) {
-  const [activePage, setActivePage] = useState("dashboard");
+  const [activePage, setActivePage] = useState("");
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [branches, setBranches] = useState([]);
   const [employees, setEmployees] = useState([]);
 
-  // lúc mở ra thì hiện ra
+  // lúc đăng nhập thì hiện ra
+  useEffect(() => {
+    if (role === "admin") setActivePage("employee");
+    else setActivePage("dashboard");
+  }, [role]);
+
   useEffect(() => {
     const savedProduct = localStorage.getItem("products");
     if (savedProduct) {
@@ -130,37 +135,41 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
           <div>
             <h2>Thông tin bán hàng</h2>
 
-            <div style={cardContainer}>
-              <div style={card}>
+            <div className="card-container">
+              <div className="card">
                 <h3>Doanh thu: </h3>
-                <p style={cardNumber}>{totalRevenue.toLocaleString()} VNĐ</p>
+                <p className="card-number">
+                  {totalRevenue.toLocaleString()} VNĐ
+                </p>
               </div>
 
-              <div style={card}>
+              <div className="card">
                 <h3>Sản phẩm: </h3>
-                <p style={cardNumber}>{products.length}</p>
+                <p className="card-number">{products.length}</p>
               </div>
 
-              <div style={card}>
+              <div className="card">
                 <h3>Đơn hàng: </h3>
-                <p style={cardNumber}>{orders.length}</p>
+                <p className="card-number">{orders.length}</p>
               </div>
 
-              <div style={topBox}>
+              <div className="top-box">
                 <h3>Top sản phẩm bán chạy</h3>
 
-                {sortedProducts.length === 0 && (
-                  <p style={{ color: "#777" }}>Chưa có dữ liệu</p>
-                )}
-
-                {sortedProducts.map(([name, qty], index) => (
-                  <div key={name} style={topItem}>
-                    <span>
-                      {index + 1}, {name}
-                    </span>
-                    <span>Đã bán: {qty}</span>
-                  </div>
-                ))}
+                <div className="top-content">
+                  {sortedProducts.length === 0 ? (
+                    <p className="empty">Chưa có dữ liệu</p>
+                  ) : (
+                    sortedProducts.map(([name, qty], index) => (
+                      <div key={name} className="top-item">
+                        <span>
+                          {index + 1}. {name}
+                        </span>
+                        <span> Đã bán: {qty}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -169,7 +178,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
   };
 
   return (
-    <div style={{ display: "flex" }}>
+    <div className="app-container">
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
@@ -178,46 +187,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
         setRole={setRole}
       />
 
-      <div style={{ flex: 1, padding: "20px" }}>{renderContent()}</div>
+      <div className="main-content">{renderContent()}</div>
     </div>
   );
 }
-
-const cardContainer = {
-  display: "flex",
-  gap: "20px",
-  marginTop: "20px",
-  flexWrap: "wrap",
-};
-
-const card = {
-  background: "#fff",
-  padding: "25px",
-  borderRadius: "10px",
-  width: "220px",
-  textAlign: "center",
-  boxShadow: "0 3px 8px rgba(0, 0, 0, 0.1)",
-};
-
-const cardNumber = {
-  fontSize: "24px",
-  fontWeight: "bold",
-  marginTop: "10px",
-  color: "#2c3e50",
-};
-
-const topBox = {
-  marginTop: "40px",
-  background: "#fff",
-  padding: "20px",
-  borderRadius: "10px",
-  width: "500px",
-  boxShadow: "0 3px 8px rgba(0, 0, 0, 0.1)",
-};
-
-const topItem = {
-  display: "flex",
-  justifyContent: "space-between",
-  padding: "10px 0",
-  borderBottom: "1px solid #eee",
-};

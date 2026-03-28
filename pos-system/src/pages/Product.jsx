@@ -32,9 +32,9 @@ export default function Product({ products, setProducts }) {
     <div>
       <h2>Sản phẩm</h2>
 
-      <div style={formBox}>
+      <div className="form-box">
         <input
-          style={input}
+          className="input"
           type="text"
           placeholder="Tên sản phẩm"
           value={name}
@@ -42,7 +42,7 @@ export default function Product({ products, setProducts }) {
         />
 
         <input
-          style={input}
+          className="input"
           type="number"
           placeholder="Giá"
           value={price}
@@ -50,48 +50,45 @@ export default function Product({ products, setProducts }) {
         />
 
         <input
-          style={input}
+          className="input"
           type="number"
           placeholder="Số lượng"
           value={stock}
           onChange={(e) => setStock(e.target.value)}
         />
 
-        <button style={addBtn} onClick={addProduct}>
+        <button className="btn btn-primary" onClick={addProduct}>
           Thêm
         </button>
       </div>
-      <table
-        style={{
-          width: "100%",
-          marginTop: "20px",
-          borderCollapse: "collapse",
-        }}
-      >
+      <table className="table">
         <thead style={{ background: "#c9c9c9" }}>
           <tr>
-            <th>Tên</th>
-            <th>Giá</th>
-            <th>Tồn kho</th>
-            <th>Action</th>
+            <th className="th">Tên</th>
+            <th className="th">Giá</th>
+            <th className="th">Tồn kho</th>
+            <th className="th">Action</th>
           </tr>
         </thead>
 
         <tbody>
           {products.length === 0 ? (
             <tr>
-              <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>
+              <td colSpan="4" className="td empty">
                 Chưa có sản phẩm
               </td>
             </tr>
           ) : (
             products.map((p) => (
               <tr key={p.id}>
-                <td style={cell}>{p.name}</td>
-                <td style={cell}>{p.price.toLocaleString()} VNĐ</td>
-                <td style={cell}>{p.stock}</td>
-                <td style={cell}>
-                  <button style={deleteBtn} onClick={() => removeProduct(p.id)}>
+                <td className="td">{p.name}</td>
+                <td className="td">{p.price.toLocaleString()} VNĐ</td>
+                <td className="td">{p.stock}</td>
+                <td className="td">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => removeProduct(p.id)}
+                  >
                     Xóa
                   </button>
                 </td>
@@ -103,38 +100,3 @@ export default function Product({ products, setProducts }) {
     </div>
   );
 }
-const formBox = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "20px",
-};
-
-const input = {
-  padding: "8px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-};
-
-const addBtn = {
-  background: "#1976d2",
-  color: "white",
-  border: "none",
-  padding: "8px 15px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const deleteBtn = {
-  background: "#e53935",
-  color: "white",
-  border: "none",
-  padding: "5px 10px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const cell = {
-  padding: "10px",
-  borderBottom: "1px solid #ddd",
-  textAlign: "center",
-};

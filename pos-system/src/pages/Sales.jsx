@@ -80,24 +80,24 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
   );
 
   return (
-    <div style={container}>
+    <div className="container-grid">
       {/* product list */}
       <div>
         <input
-          style={searchBox}
+          className="search-box"
           placeholder="Tìm sản phẩm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <div style={productGrid}>
+        <div className="product-grid">
           {filteredProducts.length === 0 ? (
-            <p style={noProduct}>Không tìm thấy sản phẩm</p>
+            <div className="empty-box">Không tìm thấy sản phẩm</div>
           ) : (
             filteredProducts.map((p) => (
               <div
                 key={p.id}
-                style={productCard}
+                className="product-card"
                 onClick={() => p.stock > 0 && addToCart(p)}
               >
                 <h4>{p.name}</h4>
@@ -122,14 +122,14 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
       </div>
 
       {/* cart */}
-      <div style={cartBox}>
+      <div className="cart-box">
         <h3>Giỏ hàng</h3>
 
         {cart.length === 0 && <p>Chưa có sản phẩm</p>}
 
         {cart.map((i) => (
-          <div key={i.id} style={cartItem}>
-            <div style={cartRow}>
+          <div key={i.id} className="cart-item">
+            <div className="cart-row">
               <span>{i.name}</span>
 
               <input
@@ -137,7 +137,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                 min="1"
                 max={i.stock}
                 value={i.quantity}
-                style={qtyInput}
+                className="qty-input"
                 onChange={(e) => {
                   const value = e.target.value;
 
@@ -161,7 +161,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
               />
             </div>
 
-            <button style={removeBtn} onClick={() => removeFromCart(i.id)}>
+            <button
+              className="btn btn-danger"
+              onClick={() => removeFromCart(i.id)}
+            >
               Xóa
             </button>
           </div>
@@ -172,7 +175,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         </h3>
 
         <input
-          style={cashInput}
+          className="input"
           type="number"
           placeholder="Tiền khách trả"
           value={cash}
@@ -181,102 +184,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
         <p>Tiền thừa: {change > 0 ? change : 0}</p>
 
-        <button style={checkoutBtn} onClick={checkout}>
+        <button className="btn btn-success" onClick={checkout}>
           Thanh toán
         </button>
       </div>
     </div>
   );
 }
-
-const container = {
-  display: "grid",
-  gridTemplateColumns: "2fr 1fr",
-  gap: "30px",
-};
-
-const searchBox = {
-  width: "100%",
-  padding: "10px",
-  borderRadius: "6px",
-  border: "1px solid #ccc",
-  marginBottom: "20px",
-};
-
-const productGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-  gap: "15px",
-};
-
-const productCard = {
-  background: "#fff",
-  padding: "15px",
-  borderRadius: "8px",
-  textAlign: "center",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-  cursor: "pointer",
-};
-
-const noProduct = {
-  gridColumn: "1 / -1",
-  textAlign: "center",
-  padding: "40px",
-  color: "#777",
-};
-
-const cartBox = {
-  background: "#fff",
-  padding: "20px",
-  borderRadius: "8px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-};
-
-const cartItem = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "10px",
-};
-
-const cartRow = {
-  display: "flex",
-  justifyContent: "space-between",
-  width: "100%",
-  alignItems: "center",
-};
-
-const qtyInput = {
-  width: "60px",
-  padding: "5px",
-  borderRadius: "4px",
-  border: "1px solid #ccc",
-};
-
-const removeBtn = {
-  background: "#e53935",
-  border: "none",
-  color: "white",
-  padding: "4px 10px",
-  borderRadius: "4px",
-  cursor: "pointer",
-};
-
-const cashInput = {
-  width: "100%",
-  padding: "8px",
-  marginTop: "10px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-};
-
-const checkoutBtn = {
-  marginTop: "15px",
-  width: "100%",
-  padding: "10px",
-  background: "#2e7d32",
-  color: "white",
-  border: "none",
-  borderRadius: "6px",
-  cursor: "pointer",
-};

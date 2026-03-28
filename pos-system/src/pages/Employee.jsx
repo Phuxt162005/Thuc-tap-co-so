@@ -55,6 +55,16 @@ export default function Employee({ employees, setEmployees, branches }) {
     }
   };
 
+  // tính lương nhân viên
+  const calculateSalary = (e) => {
+    const work = Number(e.workDays || 0);
+    const base = Number(e.salary || 0);
+    const bonus = Number(e.bonus || 0);
+    const unpaid = Number(e.leaveUnpaid || 0);
+
+    return work * base + bonus;
+  };
+
   // xóa
   const removeEmployee = (id) => {
     if (!window.confirm("Bạn có chắc muốn xóa?")) return;
@@ -66,11 +76,11 @@ export default function Employee({ employees, setEmployees, branches }) {
       <h2>Quản lý nhân viên</h2>
 
       {/* form */}
-      <div style={formBox}>
+      <div className="form-box">
         <select
-          style={input}
+          className="input"
           value={branch}
-          onChange={(e) => setBranch(Number(e.target.value))}
+          onChange={(e) => setBranch(e.target.value)}
         >
           <option value="">Chọn chi nhánh</option>
           {branches.map((b) => (
@@ -81,7 +91,7 @@ export default function Employee({ employees, setEmployees, branches }) {
         </select>
 
         <input
-          style={input}
+          className="input"
           placeholder="Tên"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -89,14 +99,14 @@ export default function Employee({ employees, setEmployees, branches }) {
 
         <p>Ngày sinh:</p>
         <input
-          style={input}
+          className="input"
           type="date"
           value={dob}
           onChange={(e) => setDob(e.target.value)}
         />
 
         <select
-          style={input}
+          className="input"
           value={role}
           onChange={(e) => setRole(e.target.value)}
         >
@@ -105,7 +115,7 @@ export default function Employee({ employees, setEmployees, branches }) {
           <option>Nhân viên quản lý</option>
         </select>
 
-        <button style={addBtn} onClick={addEmployee}>
+        <button className="btn btn-primary" onClick={addEmployee}>
           Thêm
         </button>
       </div>
@@ -113,42 +123,43 @@ export default function Employee({ employees, setEmployees, branches }) {
       <hr />
 
       {/* table */}
-      <table style={table}>
+      <table className="table">
         <thead>
           <tr>
-            <th style={header}>Tên</th>
-            <th style={header}>Ngày sinh</th>
-            <th style={header}>Chi nhánh</th>
-            <th style={header}>Chức vụ</th>
-            <th style={header}>Ngày làm</th>
-            <th style={header}>Lương</th>
-            <th style={header}>Nghỉ phép</th>
-            <th style={header}>Nghỉ không phép</th>
-            <th style={header}>Thưởng</th>
-            <th style={header}>Action</th>
+            <th className="th">Tên</th>
+            <th className="th">Ngày sinh</th>
+            <th className="th">Chi nhánh</th>
+            <th className="th">Chức vụ</th>
+            <th className="th">Ngày làm</th>
+            <th className="th">Lương</th>
+            <th className="th">Nghỉ phép</th>
+            <th className="th">Nghỉ không phép</th>
+            <th className="th">Thưởng</th>
+            <th className="th">Action</th>
           </tr>
         </thead>
 
         <tbody>
           {employees.length === 0 ? (
             <tr>
-              <td colSpan="10" style={empty}>
+              <td colSpan="10" className="td empty">
                 Chưa có nhân viên
               </td>
             </tr>
           ) : (
             employees.map((e) => (
               <tr key={e.id}>
-                <td style={cell}>{e.name}</td>
-                <td style={cell}>
+                <td className="td">{e.name}</td>
+                <td className="td">
                   {new Date(e.dob).toLocaleDateString("vi-VN")}
                 </td>
-                <td style={cell}>{getBranchName(e.branch)}</td>
-                <td style={cell}>{e.role}</td>
+                <td className="td">{getBranchName(e.branch)}</td>
+                <td className="td">{e.role}</td>
 
                 {/* workDays */}
-                <td style={cell}>
+                <td className="td">
                   <input
+                    className="input-small"
                     type="number"
                     value={e.workDays || ""}
                     onChange={(ev) =>
@@ -157,28 +168,28 @@ export default function Employee({ employees, setEmployees, branches }) {
                     onBlur={(ev) =>
                       handleBlur(e.id, "workDays", ev.target.value)
                     }
-                    style={inputSmall}
                   />
                 </td>
 
                 {/* lương */}
-                <td style={cell}>
+                <td className="td">
                   <input
                     type="number"
+                    className="input-small"
                     value={e.salary || ""}
                     onChange={(ev) =>
                       updateField(e.id, "salary", ev.target.value)
                     }
                     onBlur={(ev) => handleBlur(e.id, "salary", ev.target.value)}
-                    style={inputSmall}
                   />
-                  VNĐ
+                  {calculateSalary(e).toLocaleString()} VNĐ
                 </td>
 
                 {/* leavePaid */}
-                <td style={cell}>
+                <td className="td">
                   <input
                     type="number"
+                    className="input-small"
                     value={e.leavePaid || ""}
                     onChange={(ev) =>
                       updateField(e.id, "leavePaid", ev.target.value)
@@ -186,14 +197,14 @@ export default function Employee({ employees, setEmployees, branches }) {
                     onBlur={(ev) =>
                       handleBlur(e.id, "leavePaid", ev.target.value)
                     }
-                    style={inputSmall}
                   />
                 </td>
 
                 {/* leaveUnpaid */}
-                <td style={cell}>
+                <td className="td">
                   <input
                     type="number"
+                    className="input-small"
                     value={e.leaveUnpaid || ""}
                     onChange={(ev) =>
                       updateField(e.id, "leaveUnpaid", ev.target.value)
@@ -201,26 +212,25 @@ export default function Employee({ employees, setEmployees, branches }) {
                     onBlur={(ev) =>
                       handleBlur(e.id, "leaveUnpaid", ev.target.value)
                     }
-                    style={inputSmall}
                   />
                 </td>
 
                 {/* bonus */}
-                <td style={cell}>
+                <td className="td">
                   <input
                     type="number"
+                    className="input-small"
                     value={e.bonus || ""}
                     onChange={(ev) =>
                       updateField(e.id, "bonus", ev.target.value)
                     }
                     onBlur={(ev) => handleBlur(e.id, "bonus", ev.target.value)}
-                    style={inputSmall}
                   />
                 </td>
 
-                <td style={cell}>
+                <td className="td">
                   <button
-                    style={deleteBtn}
+                    className="btn btn-danger"
                     onClick={() => removeEmployee(e.id)}
                   >
                     Xóa
@@ -234,62 +244,3 @@ export default function Employee({ employees, setEmployees, branches }) {
     </div>
   );
 }
-
-const formBox = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "20px",
-  flexWrap: "wrap",
-};
-
-const input = {
-  padding: "8px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-};
-
-const inputSmall = {
-  width: "70px",
-  padding: "5px",
-};
-
-const addBtn = {
-  background: "#1976d2",
-  color: "white",
-  border: "none",
-  padding: "8px 15px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const deleteBtn = {
-  background: "#e53935",
-  color: "white",
-  border: "none",
-  padding: "5px 10px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  marginTop: "20px",
-};
-
-const header = {
-  padding: "12px",
-  borderBottom: "2px solid #ddd",
-  textAlign: "left",
-};
-
-const cell = {
-  padding: "12px",
-  borderBottom: "1px solid #eee",
-};
-
-const empty = {
-  textAlign: "center",
-  padding: "30px",
-  color: "#777",
-};
