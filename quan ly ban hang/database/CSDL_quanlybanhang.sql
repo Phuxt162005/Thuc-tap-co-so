@@ -1,5 +1,5 @@
-CREATE DATABASE MiniPOS;
-USE MiniPOS;
+CREATE DATABASE CSDL_quanlybanhang;
+USE CSDL_quanlybanhang;
 CREATE TABLE Branch (
     branchId INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
