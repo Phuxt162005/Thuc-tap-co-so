@@ -7,11 +7,11 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
   const addToCart = (product) => {
     setCart((prevCart) => {
-      const existing = prevCart.find((i) => i.id === product.id);
+      const existing = prevCart.find((i) => i.productId === product.productId);
 
       if (existing) {
         return prevCart.map((i) =>
-          i.id === product.id
+          i.productId === product.productId
             ? {
                 ...i,
                 quantity:
@@ -29,52 +29,80 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
   // xóa sản phẩm khỏi giỏ hàng
   const removeFromCart = (id) => {
-    setCart(cart.filter((i) => i.id !== id));
+    setCart(cart.filter((i) => i.productId !== id));
   };
 
   // tính tiền
   const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   // tiền thừa
-  const change = cash - total;
+  const change = Number(cash) - total;
 
   // trả tiền
-  const checkout = () => {
-    if (cash < total) {
+  const checkout = async () => {
+    if (cart.length === 0) {
+      alert("Giỏ hàng trống");
+      return;
+    }
+
+    if (Number(cash) < total) {
       alert("Không đủ tiền");
       return;
     }
 
-    // order mới
-    const newOrder = {
-      id: Date.now(),
-      items: cart,
-      total,
-      date: new Date().toLocaleString(),
-    };
+    try {
+      // cập nhật tồn kho
+      for (const item of cart) {
+        const product = products.find((p) => p.productId === item.productId);
 
-    // cập nhật tồn kho
-    const updatedProducts = products.map((p) => {
-      const item = cart.find((c) => c.id === p.id);
+        const newStock = Number(product.stock) - Number(item.quantity);
 
-      if (item) {
-        return {
-          ...p,
-          stock: p.stock - item.quantity,
-        };
+        await fetch(`http://localhost:5000/products/${item.productId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ stock: newStock }),
+        });
       }
 
-      return p;
-    });
+      // lưu hóa đơn
+      await fetch("http://localhost:5000/orders", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId: 1,
+          customerId: 1,
+          total,
+          items: cart,
+        }),
+      });
 
-    setProducts(updatedProducts);
+      const res = await fetch("http://5000/products");
+      const data = await res.json();
 
-    setOrders((prev) => [...prev, newOrder]);
+      setProducts(data);
 
-    setCart([]);
-    setCash("");
+      // order mới
+      const newOrder = {
+        id: Date.now(),
+        items: cart,
+        total,
+        date: new Date().toLocaleString(),
+      };
+
+      setOrders((prev) => [...prev, newOrder]);
+
+      setCart([]);
+      setCash("");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
+  // tìm kiếm
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
@@ -121,7 +149,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         </div>
       </div>
 
-      {/* cart */}
+      {/* giỏ hàng */}
       <div className="cart-box">
         <h3>Giỏ hàng</h3>
 
@@ -144,7 +172,9 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                   if (value === "") {
                     setCart(
                       cart.map((item) =>
-                        item.id === i.id ? { ...item, quantity: "" } : item,
+                        item.productId === i.productId
+                          ? { ...item, quantity: "" }
+                          : item,
                       ),
                     );
                     return;
@@ -154,7 +184,9 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
                   setCart(
                     cart.map((item) =>
-                      item.id === i.id ? { ...item, quantity: qty } : item,
+                      item.productId === i.productId
+                        ? { ...item, quantity: qty }
+                        : item,
                     ),
                   );
                 }}
@@ -163,7 +195,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
             <button
               className="btn btn-danger"
-              onClick={() => removeFromCart(i.id)}
+              onClick={() => removeFromCart(i.productId)}
             >
               Xóa
             </button>

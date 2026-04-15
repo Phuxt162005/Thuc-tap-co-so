@@ -5,27 +5,55 @@ export default function Product({ products, setProducts }) {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
 
+  // Lấy toàn bộ sản phẩm
+  const loadProduct = async () => {
+    const res = await fetch("http://localhost:5000/products");
+    const data = await res.json();
+    setProducts(data);
+  };
+
   // Thêm sản phẩm mới
-  const addProduct = () => {
-    if (!name || !price || !stock) return;
+  const addProduct = async () => {
+    if (!name || !price || !stock) {
+      alert("Nhập đầy đủ thông tin sản phẩm!");
+      return;
+    }
 
-    const newProduct = {
-      id: Date.now(),
-      name,
-      price: Number(price),
-      stock: Number(stock),
-    };
+    try {
+      await fetch("http://localhost:5000/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          price: Number(price),
+          stock: Number(stock),
+          categoryId: 1,
+        }),
+      });
 
-    setProducts([...products, newProduct]);
+      await loadProduct();
 
-    setName("");
-    setPrice("");
-    setStock("");
+      setName("");
+      setPrice("");
+      setStock("");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // Xóa sản phẩm
-  const removeProduct = (id) => {
-    setProducts(products.filter((p) => p.id !== id));
+  const removeProduct = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/products/${id}`, {
+        method: "DELETE",
+      });
+
+      await loadProduct();
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -80,14 +108,14 @@ export default function Product({ products, setProducts }) {
             </tr>
           ) : (
             products.map((p) => (
-              <tr key={p.id}>
+              <tr key={p.productId}>
                 <td className="td">{p.name}</td>
                 <td className="td">{p.price.toLocaleString()} VNĐ</td>
                 <td className="td">{p.stock}</td>
                 <td className="td">
                   <button
                     className="btn btn-danger"
-                    onClick={() => removeProduct(p.id)}
+                    onClick={() => removeProduct(p.productId)}
                   >
                     Xóa
                   </button>

@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
 
 // ---------- API product ----------
 app.get("/products", (req, res) => {
-  const sql = "select * from product";
+  const sql = "select * from Product";
 
   database.query(sql, (err, result) => {
     if (err) {
@@ -39,7 +39,7 @@ app.get("/products", (req, res) => {
 app.post("/products", (req, res) => {
   const { name, price, stock, categoryId } = req.body;
 
-  const sql = `insert into product(name, price, stock, categoryId) values (?, ?, ?, ?)`;
+  const sql = `insert into Product(name, price, stock, categoryId) values (?, ?, ?, ?)`;
 
   database.query(sql, [name, price, stock, categoryId], (err, result) => {
     if (err) {
@@ -50,11 +50,27 @@ app.post("/products", (req, res) => {
   });
 });
 
+// Cập nhật tồn kho
+app.put("/products/:id", (req, res) => {
+  const { id } = req.params;
+  const { stock } = req.body;
+
+  const sql = `update Product set stock = ? where productId = ?`;
+
+  database.query(sql, [stock, id], (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
+    } else {
+      res.json({ message: "Cập nhật vào kho thành công" });
+    }
+  });
+});
+
 // Xóa sản phẩm
 app.delete("/products/:id", (req, res) => {
-  const { id } = res.params;
+  const { id } = req.params;
 
-  const sql = "delete from product where productId = ?";
+  const sql = "delete from Product where productId = ?";
 
   database.query(sql, [id], (err, result) => {
     if (err) {
@@ -69,7 +85,7 @@ app.delete("/products/:id", (req, res) => {
 
 // Lấy danh sách nhân viên
 app.get("/employees", (req, res) => {
-  const sql = "select * from employee";
+  const sql = "select * from Employee";
 
   database.query(sql, (err, result) => {
     if (err) {
@@ -84,7 +100,7 @@ app.get("/employees", (req, res) => {
 app.post("/employees", (req, res) => {
   const { name, dob, phone, branchId } = req.body;
 
-  const sql = `insert into employee(name, dob, phone, branchId) values(?, ?, ?, ?)`;
+  const sql = `insert into Employee(name, dob, phone, branchId) values(?, ?, ?, ?)`;
 
   database.query(sql, [name, dob, phone, branchId], (err, result) => {
     if (err) {
@@ -99,7 +115,7 @@ app.post("/employees", (req, res) => {
 
 // Lấy chi nhánh
 app.get("/branches", (req, res) => {
-  const sql = "select * from branch";
+  const sql = "select * from Branch";
 
   database.query(sql, (err, result) => {
     if (err) {
@@ -114,7 +130,7 @@ app.get("/branches", (req, res) => {
 app.post("/branches", (req, res) => {
   const { name, address, phone } = req.body;
 
-  const sql = `insert into branch(name, address, phone) values(?, ?, ?)`;
+  const sql = `insert into Branch(name, address, phone) values(?, ?, ?)`;
 
   database.query(sql, [name, address, phone], (err, result) => {
     if (err) {
@@ -129,7 +145,7 @@ app.post("/branches", (req, res) => {
 
 // Lấy hóa đơn
 app.get("/orders", (req, res) => {
-  const sql = "select * from invoice";
+  const sql = "select * from Invoice";
 
   database.query(sql, (err, result) => {
     if (err) {
@@ -140,23 +156,45 @@ app.get("/orders", (req, res) => {
   });
 });
 
-// Tạo hóa đơn
+// Tạo hóa đơn + chi tiết hóa đơn
 app.post("/orders", (req, res) => {
-  const { total, employeeId, customerId } = req.body;
+  const { employeeId, customerId, total, items } = req.body;
 
-  const sql = `insert into invoice(date, employeeId, customerId, total) value (now(), ?, ?, ?)`;
+  const sql = `insert into Invoice(date, employeeId, customerId, total) value(now(), ?, ?, ?)`;
 
   database.query(sql, [employeeId, customerId, total], (err, result) => {
     if (err) {
-      res.status(500).json(err);
-    } else {
-      res.json({ message: "Thanh toán thành công" });
+      return res.status(500).json(err);
     }
+
+    const invoiceId = result.insertId;
+
+    if (!items || items.length === 0) {
+      return res.json({
+        message: "Tạo hóa đơn thành công",
+        invoiceId,
+      });
+    }
+
+    const detailValues = items.map((item) => [
+      invoiceId,
+      item.productId,
+      item.quantity,
+      item.price,
+    ]);
+
+    const detailSql = `insert into InvoiceDetail(invoiceId, productId, quantity, price) values ?`;
+
+    database.query(detailSql, [detailValues], (detailErr, detailResult) => {
+      if (detailErr) {
+        return res.status(500).json(detailErr);
+      }
+      res.json({ message: "Than toán thành công!", invoiceId });
+    });
   });
 });
 
 // running server
-(app.listen(5000),
-  () => {
-    console.log("Server is running");
-  });
+app.listen(5000, () => {
+  console.log("Server is running");
+});

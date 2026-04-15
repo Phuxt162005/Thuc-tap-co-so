@@ -14,24 +14,22 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
   const [branches, setBranches] = useState([]);
   const [employees, setEmployees] = useState([]);
 
-  // lúc đăng nhập thì hiện ra
+  // khi đăng nhập
   useEffect(() => {
     if (role === "admin") setActivePage("employee");
     else setActivePage("dashboard");
   }, [role]);
 
+  // lấy sản phẩm từ backend
   useEffect(() => {
-    const savedProduct = localStorage.getItem("products");
-    if (savedProduct) {
-      setProducts(JSON.parse(savedProduct));
-    } else {
-      setProducts([
-        { id: 1, name: "Bút Thiên Long", price: 10000, stock: 50 },
-        { id: 2, name: "Dầu gội Dove", price: 120000, stock: 30 },
-        { id: 3, name: "Sunlight", price: 35000, stock: 40 },
-      ]);
-    }
+    fetch("http://localhost:5000/products")
+      .then((res) => res.json())
+      .then((data) => setProducts(data))
+      .catch((err) => console.log("Lỗi lấy sản phẩm:", err));
+  }, []);
 
+  // lấy dữ liệu localStorage cho phần còn lại
+  useEffect(() => {
     const savedOrders = localStorage.getItem("orders");
     if (savedOrders) {
       setOrders(JSON.parse(savedOrders));
@@ -48,12 +46,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
     }
   }, []);
 
-  // lưu sản phẩm
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
-
-  // lưu order
+  // lưu orders
   useEffect(() => {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
@@ -83,12 +76,12 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
     });
   });
 
-  // sắp xếp sản phẩm
+  // sắp xếp top sản phẩm
   const sortedProducts = Object.entries(topProducts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 
-  // render content
+  // render nội dung
   const renderContent = () => {
     switch (activePage) {
       case "sales":
@@ -100,12 +93,16 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
             setOrders={setOrders}
           />
         );
+
       case "product":
         return <Product products={products} setProducts={setProducts} />;
+
       case "report":
         return <Report orders={orders} />;
+
       case "inventory":
         return <Inventory products={products} setProducts={setProducts} />;
+
       case "employee":
         if (role !== "admin" && role !== "manager") {
           return <p>Không có quyền truy cập</p>;
@@ -118,6 +115,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
             setBranches={setBranches}
           />
         );
+
       case "branch":
         if (role !== "admin" && role !== "manager") {
           return <p>Không có quyền truy cập</p>;
@@ -137,19 +135,19 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
             <div className="card-container">
               <div className="card">
-                <h3>Doanh thu: </h3>
+                <h3>Doanh thu:</h3>
                 <p className="card-number">
                   {totalRevenue.toLocaleString()} VNĐ
                 </p>
               </div>
 
               <div className="card">
-                <h3>Sản phẩm: </h3>
+                <h3>Sản phẩm:</h3>
                 <p className="card-number">{products.length}</p>
               </div>
 
               <div className="card">
-                <h3>Đơn hàng: </h3>
+                <h3>Đơn hàng:</h3>
                 <p className="card-number">{orders.length}</p>
               </div>
 

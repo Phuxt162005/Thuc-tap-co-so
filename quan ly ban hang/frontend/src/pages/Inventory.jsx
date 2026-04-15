@@ -1,24 +1,40 @@
 import { useState } from "react";
 
 export default function Inventory({ products, setProducts }) {
-  const [id, setId] = useState("");
+  const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
 
   // nhập kho
-  const importStock = () => {
-    if (!id || !quantity) {
+  const importStock = async () => {
+    if (!productId || !quantity) {
       alert("Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
-    const updatedProducts = products.map((p) =>
-      p.id === Number(id) ? { ...p, stock: p.stock + Number(quantity) } : p,
-    );
+    const product = product.find((p) => p.productId === Number(productId));
 
-    setProducts(updatedProducts);
+    if (!product) return;
 
-    setId("");
-    setQuantity("");
+    const newStock = Number(product.stock) + Number(quantity);
+
+    try {
+      await fetch(`http://localhost:5000/products/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ stock: newStock }),
+      });
+
+      const res = await fetch("http://localhost:5000/products");
+      const data = await res.json();
+      setProducts(data);
+
+      setProductId("");
+      setQuantity("");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -30,13 +46,13 @@ export default function Inventory({ products, setProducts }) {
       <div className="form-box">
         <select
           className="input"
-          value={id}
-          onChange={(e) => setId(e.target.value)}
+          value={productId}
+          onChange={(e) => setProductId(e.target.value)}
         >
           <option value="">Chọn sản phẩm</option>
 
           {products.map((p) => (
-            <option key={p.id} value={p.id}>
+            <option key={p.productId} value={p.productId}>
               {p.name}
             </option>
           ))}
@@ -74,7 +90,7 @@ export default function Inventory({ products, setProducts }) {
             </tr>
           ) : (
             products.map((p) => (
-              <tr key={p.id}>
+              <tr key={p.productId}>
                 <td className="td">{p.name}</td>
 
                 <td
