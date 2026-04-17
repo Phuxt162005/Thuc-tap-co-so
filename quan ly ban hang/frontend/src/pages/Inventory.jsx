@@ -11,7 +11,7 @@ export default function Inventory({ products, setProducts }) {
       return;
     }
 
-    const product = product.find((p) => p.productId === Number(productId));
+    const product = products.find((p) => p.productId === Number(productId));
 
     if (!product) return;
 

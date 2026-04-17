@@ -5,22 +5,34 @@ export default function Branch({ branches, setBranches, employees }) {
   const [openDate, setOpenDate] = useState("");
 
   // thêm chi nhánh
-  const addBranch = () => {
+  const addBranch = async () => {
     if (!name.trim() || !openDate) {
       alert("Vui lòng nhập đầy đủ");
       return;
     }
 
-    const newBranch = {
-      id: Date.now(),
-      name: name.trim(),
-      openDate,
-    };
+    try {
+      await fetch("http://localhost:5000/branches", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          address: "Chưa có",
+          phone: Date.now().toString(),
+        }),
+      });
 
-    setBranches((prev) => [...prev, newBranch]);
+      const res = await fetch("http://localhost:5000/branches");
+      const data = await res.json();
 
-    setName("");
-    setOpenDate("");
+      setBranches(data);
+
+      setName("");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // xóa chi nhánh

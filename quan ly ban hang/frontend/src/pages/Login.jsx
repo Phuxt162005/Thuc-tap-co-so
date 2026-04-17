@@ -6,21 +6,31 @@ export default function Login({ setIsLogin, setRole }) {
   const [password, setPassword] = useState("");
 
   // xử lý nhập tài khoản mật khẩu
-  const handleLogin = () => {
-    if (username === "admin" && password === "123") {
-      localStorage.setItem("role", "admin");
-      setRole("admin");
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message);
+        return;
+      }
+
+      // lưu role
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("username", data.username);
+
+      setRole(data.role);
       setIsLogin(true);
-    } else if (username === "nv" && password === "123") {
-      localStorage.setItem("role", "employee");
-      setRole("employee");
-      setIsLogin(true);
-    } else if (username === "manager" && password === "123") {
-      localStorage.setItem("role", "manager");
-      setRole("manager");
-      setIsLogin(true);
-    } else {
-      alert("Sai tài khoản hoặc mật khẩu");
+    } catch (err) {
+      console.log(err);
     }
   };
 

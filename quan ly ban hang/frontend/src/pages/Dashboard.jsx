@@ -7,6 +7,8 @@ import Inventory from "./Inventory";
 import Employee from "./Employee";
 import Branch from "./Branch";
 
+const api = "http://localhost:5000";
+
 export default function Dashboard({ setIsLogin, role, setRole }) {
   const [activePage, setActivePage] = useState("");
   const [products, setProducts] = useState([]);
@@ -22,44 +24,22 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
   // lấy sản phẩm từ backend
   useEffect(() => {
-    fetch("http://localhost:5000/products")
+    fetch(`${api}/products`)
       .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch((err) => console.log("Lỗi lấy sản phẩm:", err));
+      .then(setProducts);
+
+    fetch(`${api}/branches`)
+      .then((res) => res.json())
+      .then(setBranches);
+
+    fetch(`${api}/employees`)
+      .then((res) => res.json())
+      .then(setEmployees);
+
+    fetch(`${api}/orders`)
+      .then((res) => res.json())
+      .then(setOrders);
   }, []);
-
-  // lấy dữ liệu localStorage cho phần còn lại
-  useEffect(() => {
-    const savedOrders = localStorage.getItem("orders");
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    }
-
-    const savedBranches = localStorage.getItem("branches");
-    if (savedBranches) {
-      setBranches(JSON.parse(savedBranches));
-    }
-
-    const savedEmployees = localStorage.getItem("employees");
-    if (savedEmployees) {
-      setEmployees(JSON.parse(savedEmployees));
-    }
-  }, []);
-
-  // lưu orders
-  useEffect(() => {
-    localStorage.setItem("orders", JSON.stringify(orders));
-  }, [orders]);
-
-  // lưu branch
-  useEffect(() => {
-    localStorage.setItem("branches", JSON.stringify(branches));
-  }, [branches]);
-
-  // lưu employee
-  useEffect(() => {
-    localStorage.setItem("employees", JSON.stringify(employees));
-  }, [employees]);
 
   // tổng doanh thu
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -68,11 +48,13 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
   const topProducts = {};
 
   orders.forEach((order) => {
+    if (!order.items) return;
+
     order.items.forEach((item) => {
-      if (!topProducts[item.name]) {
-        topProducts[item.name] = 0;
+      if (!topProducts[item.productId]) {
+        topProducts[item.productId] = 0;
       }
-      topProducts[item.name] += item.quantity;
+      topProducts[item.productId] += item.quantity;
     });
   });
 
@@ -158,14 +140,20 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                   {sortedProducts.length === 0 ? (
                     <p className="empty">Chưa có dữ liệu</p>
                   ) : (
-                    sortedProducts.map(([name, qty], index) => (
-                      <div key={name} className="top-item">
-                        <span>
-                          {index + 1}. {name}
-                        </span>
-                        <span> Đã bán: {qty}</span>
-                      </div>
-                    ))
+                    sortedProducts.map(([id, qty], index) => {
+                      const product = products.find(
+                        (p) => p.productId === Number(id),
+                      );
+
+                      return (
+                        <div key={id} className="top-item">
+                          <span>
+                            {index + 1}. {product?.name || "Unknown"}
+                          </span>
+                          <span> Đã bán: {qty}</span>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>

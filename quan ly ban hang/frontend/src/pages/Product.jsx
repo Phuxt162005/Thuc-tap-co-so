@@ -39,7 +39,7 @@ export default function Product({ products, setProducts }) {
       setPrice("");
       setStock("");
     } catch (err) {
-      console.log(err);
+      console.log("Lỗi thêm sản phẩm: ", err);
     }
   };
 
@@ -52,7 +52,7 @@ export default function Product({ products, setProducts }) {
 
       await loadProduct();
     } catch (err) {
-      console.log(err);
+      console.log("Lỗi xóa:", err);
     }
   };
 

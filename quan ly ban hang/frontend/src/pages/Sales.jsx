@@ -57,6 +57,11 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
         const newStock = Number(product.stock) - Number(item.quantity);
 
+        if (newStock < 0) {
+          alert("Không đủ hàng");
+          return;
+        }
+
         await fetch(`http://localhost:5000/products/${item.productId}`, {
           method: "PUT",
           headers: {
@@ -68,7 +73,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
       // lưu hóa đơn
       await fetch("http://localhost:5000/orders", {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -76,27 +81,26 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           employeeId: 1,
           customerId: 1,
           total,
-          items: cart,
+          items: cart.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            price: i.price,
+          })),
         }),
       });
 
-      const res = await fetch("http://5000/products");
-      const data = await res.json();
+      const res1 = await fetch("http://localhost:5000/products");
+      const data1 = await res1.json();
+      setProducts(data1);
 
-      setProducts(data);
-
-      // order mới
-      const newOrder = {
-        id: Date.now(),
-        items: cart,
-        total,
-        date: new Date().toLocaleString(),
-      };
-
-      setOrders((prev) => [...prev, newOrder]);
+      // reload orders
+      const res2 = await fetch("http://localhost:5000/orders");
+      const data2 = await res2.json();
+      setOrders(data2);
 
       setCart([]);
       setCash("");
+      alert("Thanh toán thành công!");
     } catch (err) {
       console.log(err);
     }
@@ -124,7 +128,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           ) : (
             filteredProducts.map((p) => (
               <div
-                key={p.id}
+                key={p.productId}
                 className="product-card"
                 onClick={() => p.stock > 0 && addToCart(p)}
               >

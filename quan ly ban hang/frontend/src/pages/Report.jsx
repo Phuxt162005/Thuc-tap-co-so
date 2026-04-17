@@ -21,8 +21,8 @@ export default function Report({ orders }) {
             <p>Ngày: {o.date}</p>
             <p>Tổng tiền: {o.total.toLocaleString()} VNĐ</p>
 
-            {o.items.map((item) => (
-              <div key={item.id}>
+            {o.items.map((item, index) => (
+              <div key={index}>
                 - {item.name} x {item.quantity}
               </div>
             ))}

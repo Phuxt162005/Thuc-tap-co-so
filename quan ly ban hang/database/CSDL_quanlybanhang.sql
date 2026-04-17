@@ -72,3 +72,30 @@ CREATE TABLE InvoiceDetail (
     FOREIGN KEY (invoiceId) REFERENCES Invoice(invoiceId),
     FOREIGN KEY (productId) REFERENCES Product(productId)
 );
+
+
+-- USER --
+DROP TABLE User;
+
+CREATE TABLE User (
+    userId INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE,
+    password VARCHAR(100),
+    role VARCHAR(20),
+    employeeId INT,
+    FOREIGN KEY (employeeId)
+        REFERENCES Employee(employeeId)
+        ON DELETE SET NULL
+);
+
+INSERT INTO Branch(name) VALUES ("Chi nhánh 1");
+
+INSERT INTO Employee(name, dob, phone, branchId) VALUES
+("Nguyen Van A", "2000-01-01", "0123", 1),
+("Tran Van B", "2001-01-01", "0456", 1);
+
+INSERT INTO User(username, password, role, employeeId) VALUES
+("admin", "123", "admin", NULL),
+("manager", "123", "manager", NULL),
+("nv1", "123", "employee", 1),
+("nv2", "123", "employee", 2);

@@ -54,6 +54,7 @@ export default function Sidebar({
         className="logout-btn"
         onClick={() => {
           localStorage.removeItem("role");
+          localStorage.removeItem("username");
           setRole("");
           setIsLogin(false);
         }}

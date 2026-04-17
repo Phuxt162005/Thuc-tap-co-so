@@ -35,6 +35,31 @@ app.get("/products", (req, res) => {
   });
 });
 
+// login
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  const sql = "select * from User where username = ? and password = ?";
+
+  database.query(sql, [username, password], (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    if (result.length === 0) {
+      return res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu" });
+    }
+
+    const user = result[0];
+
+    res.json({
+      message: "Đăng nhập thành công",
+      role: user.role,
+      username: user.name,
+    });
+  });
+});
+
 // thêm sản phẩm
 app.post("/products", (req, res) => {
   const { name, price, stock, categoryId } = req.body;
@@ -98,15 +123,33 @@ app.get("/employees", (req, res) => {
 
 // Thêm nhân viên
 app.post("/employees", (req, res) => {
-  const { name, dob, phone, branchId } = req.body;
+  const { name, dob, phone, branchId, username, password, role } = req.body;
 
-  const sql = `insert into Employee(name, dob, phone, branchId) values(?, ?, ?, ?)`;
+  const sqlEpl = `insert into Employee(name, dob, phone, branchId) values(?, ?, ?, ?)`;
 
-  database.query(sql, [name, dob, phone, branchId], (err, result) => {
-    if (err) {
-      res.status(500).json(err);
+  database.query(sql, [name, dob, phone, branchId], (err1, result1) => {
+    if (err1) {
+      res.status(500).json(err1);
+    }
+
+    const employeeId = result1.insertId;
+
+    // nếu có username thì tạo user
+    if (username && password) {
+      const sqlUser = `insert into User(username, password, role, employeeId) values(?, ?, ?, ?)`;
+
+      database.query(
+        sqlUser,
+        [username, password, role || "employee", employeeId],
+        (err2, result2) => {
+          if (err2) {
+            return res.status(500).json(err2);
+          }
+          return res.json({ message: "Thêm account thành công" });
+        },
+      );
     } else {
-      res.json({ message: "Thêm nhân viên thành công" });
+      res.json({ message: "Thêm user thành công" });
     }
   });
 });
@@ -145,14 +188,41 @@ app.post("/branches", (req, res) => {
 
 // Lấy hóa đơn
 app.get("/orders", (req, res) => {
-  const sql = "select * from Invoice";
+  const sql = `select i.invoiceId, i.date, i.total, d.productId, p.name, d.quantity, d.price 
+  from Invoice i
+  left join InvoiceDetail d on i.invoiceId = d.invoiceId
+  left join Product p on d.productId = p.productId
+  order by i.invoiceId desc`;
 
   database.query(sql, (err, result) => {
     if (err) {
-      res.status(500).json(err);
-    } else {
-      res.json(result);
+      return res.status(500).json(err);
     }
+
+    // gom dữ liệu lại
+    const orders = {};
+
+    result.forEach((row) => {
+      if (!orders[row.invoiceId]) {
+        orders[row.invoiceId] = {
+          invoiceId: row.invoiceId,
+          date: row.date,
+          total: row.total,
+          items: [],
+        };
+      }
+
+      if (row.productId) {
+        orders[row.invoiceId].items.push({
+          productId: row.productId,
+          name: row.name,
+          quantity: row.quantity,
+          price: row.price,
+        });
+      }
+    });
+
+    res.json(Object.values(orders));
   });
 });
 
