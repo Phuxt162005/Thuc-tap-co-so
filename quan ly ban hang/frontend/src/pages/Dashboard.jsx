@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
+import RevenueChart from "../components/RevenueChart";
+import TopProductChart from "../components/TopProductChart";
 import Sales from "./Sales";
 import Product from "./Product";
 import Report from "./Report";
 import Inventory from "./Inventory";
 import Employee from "./Employee";
 import Branch from "./Branch";
+import { exportPDF } from "../utils/exportPDF";
 
 const api = "http://localhost:5000";
 
@@ -15,6 +18,8 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
   const [orders, setOrders] = useState([]);
   const [branches, setBranches] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // khi đăng nhập
   useEffect(() => {
@@ -41,13 +46,34 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
       .then(setOrders);
   }, []);
 
+  const filteredOrders = orders.filter((o) => {
+    if (!fromDate && !toDate) return true;
+
+    const orderDate = new Date(o.date);
+
+    if (fromDate) {
+      const start = new Date(fromDate);
+      if (orderDate < start) return false;
+    }
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      if (orderDate > end) return false;
+    }
+
+    return true;
+  });
+
   // tổng doanh thu
-  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalRevenue = filteredOrders.reduce(
+    (sum, o) => sum + Number(o.total),
+    0,
+  );
 
   // top sản phẩm bán chạy
   const topProducts = {};
 
-  orders.forEach((order) => {
+  filteredOrders.forEach((order) => {
     if (!order.items) return;
 
     order.items.forEach((item) => {
@@ -115,6 +141,31 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
           <div>
             <h2>Thông tin bán hàng</h2>
 
+            <div style={{ marginBottom: "20px" }}>
+              <label>Từ ngày: </label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+
+              <label style={{ marginLeft: "10px" }}>Đến ngày: </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+
+              <button
+                onClick={() => {
+                  setFromDate("");
+                  setToDate("");
+                }}
+              >
+                Reset
+              </button>
+            </div>
+
             <div className="card-container">
               <div className="card">
                 <h3>Doanh thu:</h3>
@@ -130,7 +181,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
               <div className="card">
                 <h3>Đơn hàng:</h3>
-                <p className="card-number">{orders.length}</p>
+                <p className="card-number">{filteredOrders.length}</p>
               </div>
 
               <div className="top-box">
@@ -158,6 +209,15 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 </div>
               </div>
             </div>
+            <RevenueChart orders={filteredOrders} />
+            <TopProductChart orders={filteredOrders} products={products} />
+
+            <button
+              style={{ marginLeft: "10px" }}
+              onClick={() => exportPDF(filteredOrders)}
+            >
+              Xuất PDF
+            </button>
           </div>
         );
     }
