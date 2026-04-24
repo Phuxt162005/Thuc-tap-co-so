@@ -9,6 +9,9 @@ import {
 } from "recharts";
 
 export default function RevenueChart({ orders }) {
+  if (!orders || orders.length === 0) {
+    return <div>Không có dữ liệu</div>;
+  }
   const revenueByDate = {};
 
   orders.forEach((o) => {
@@ -30,7 +33,7 @@ export default function RevenueChart({ orders }) {
     <div style={{ width: "100%", height: 300 }}>
       <h3>Doanh thu theo ngày</h3>
 
-      <ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />

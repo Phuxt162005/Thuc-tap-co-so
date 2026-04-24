@@ -18,13 +18,13 @@ export const exportPDF = (orders) => {
   const tableData = orders.map((o) => [
     o.invoiceId,
     new Date(o.date).toLocaleDateString("vi-VN"),
-    o.item?.map((i) => `${i.name} x${i.quantity}`).join(", "),
+    o.items?.map((i) => `${i.name} x${i.quantity}`).join(", "),
     o.total,
   ]);
 
   autoTable(doc, {
     startY: 40,
-    head: [["Mã đơn", "Ngày", "Tổng tiền"]],
+    head: [["Mã đơn", "Ngày", "Sản phẩm", "Tổng tiền"]],
     body: tableData,
   });
 

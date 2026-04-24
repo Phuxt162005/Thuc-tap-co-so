@@ -209,9 +209,13 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 </div>
               </div>
             </div>
-            <RevenueChart orders={filteredOrders} />
-            <TopProductChart orders={filteredOrders} products={products} />
+            {filteredOrders.length > 0 && (
+              <RevenueChart orders={filteredOrders} />
+            )}
 
+            {filteredOrders.length > 0 && (
+              <TopProductChart orders={filteredOrders} products={products} />
+            )}
             <button
               style={{ marginLeft: "10px" }}
               onClick={() => exportPDF(filteredOrders)}

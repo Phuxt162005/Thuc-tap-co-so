@@ -9,6 +9,9 @@ import {
 } from "recharts";
 
 export default function TopProductChart({ orders, products }) {
+  if (!orders || !products) {
+    return <div>Không có dữ liệu</div>;
+  }
   const productMap = {};
 
   // gom dữ liệu product
@@ -40,7 +43,7 @@ export default function TopProductChart({ orders, products }) {
     <div style={{ width: "100%", height: 300 }}>
       <h3>Các sản phẩm bán chạy</h3>
 
-      <ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />

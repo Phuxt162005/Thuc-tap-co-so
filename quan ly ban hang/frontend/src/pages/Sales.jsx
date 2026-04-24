@@ -160,7 +160,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         {cart.length === 0 && <p>Chưa có sản phẩm</p>}
 
         {cart.map((i) => (
-          <div key={i.id} className="cart-item">
+          <div key={i.productId} className="cart-item">
             <div className="cart-row">
               <span>{i.name}</span>
 

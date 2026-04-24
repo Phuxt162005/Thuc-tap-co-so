@@ -17,7 +17,7 @@ export default function Report({ orders }) {
         <p className="empty">Chưa có đơn hàng</p>
       ) : (
         orders.map((o) => (
-          <div key={o.id} className="order-card">
+          <div key={o.invoiceId} className="order-card">
             <p>Ngày: {o.date}</p>
             <p>Tổng tiền: {o.total.toLocaleString()} VNĐ</p>
 

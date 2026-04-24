@@ -28,7 +28,7 @@ app.get("/products", (req, res) => {
 
   database.query(sql, (err, result) => {
     if (err) {
-      res.status(500).json(err);
+      return res.status(500).json({ message: "Lỗi server" });
     } else {
       res.json(result);
     }
@@ -39,11 +39,11 @@ app.get("/products", (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  const sql = "select * from User where username = ? and password = ?";
+  const sql = "select * from `User` where username = ? and password = ?";
 
   database.query(sql, [username, password], (err, result) => {
     if (err) {
-      return res.status(500).json(err);
+      return res.status(500).json({ message: "Lỗi server" });
     }
 
     if (result.length === 0) {
@@ -55,7 +55,7 @@ app.post("/login", (req, res) => {
     res.json({
       message: "Đăng nhập thành công",
       role: user.role,
-      username: user.name,
+      username: user.username,
     });
   });
 });
@@ -68,7 +68,7 @@ app.post("/products", (req, res) => {
 
   database.query(sql, [name, price, stock, categoryId], (err, result) => {
     if (err) {
-      res.status(500).json(err);
+      return res.status(500).json(err);
     } else {
       res.json({ message: "Thêm sản phẩm thành công" });
     }
@@ -99,7 +99,7 @@ app.delete("/products/:id", (req, res) => {
 
   database.query(sql, [id], (err, result) => {
     if (err) {
-      res.status(500).json(err);
+      return res.status(500).json(err);
     } else {
       res.json({ message: "Xóa sản phẩm thành công" });
     }
@@ -114,7 +114,7 @@ app.get("/employees", (req, res) => {
 
   database.query(sql, (err, result) => {
     if (err) {
-      res.status(500).json(err);
+      return res.status(500).json(err);
     } else {
       res.json(result);
     }
@@ -125,32 +125,49 @@ app.get("/employees", (req, res) => {
 app.post("/employees", (req, res) => {
   const { name, dob, phone, branchId, username, password, role } = req.body;
 
-  const sqlEpl = `insert into Employee(name, dob, phone, branchId) values(?, ?, ?, ?)`;
+  const sqlEpl = `insert into Employee(name, dob, phone, branchId, role) values(?, ?, ?, ?, ?)`;
 
-  database.query(sql, [name, dob, phone, branchId], (err1, result1) => {
-    if (err1) {
-      res.status(500).json(err1);
+  database.query(
+    sqlEpl,
+    [name, dob, phone, branchId, role || "employee"],
+    (err1, result1) => {
+      if (err1) {
+        res.status(500).json(err1);
+      }
+
+      const employeeId = result1.insertId;
+
+      // nếu có username thì tạo user
+      if (username && password) {
+        const sqlUser = `insert into User(username, password, role, employeeId) values(?, ?, ?, ?)`;
+
+        database.query(
+          sqlUser,
+          [username, password, role || "employee", employeeId],
+          (err2, result2) => {
+            if (err2) {
+              return res.status(500).json(err2);
+            }
+            return res.json({ message: "Thêm account thành công" });
+          },
+        );
+      } else {
+        res.json({ message: "Thêm user thành công" });
+      }
+    },
+  );
+});
+
+// Xóa nhân viên
+app.delete("/employees/:id", (req, res) => {
+  const { id } = req.params;
+  const sql = "delete from Employee where employeeId=?";
+
+  database.query(sql, [id], (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
     }
-
-    const employeeId = result1.insertId;
-
-    // nếu có username thì tạo user
-    if (username && password) {
-      const sqlUser = `insert into User(username, password, role, employeeId) values(?, ?, ?, ?)`;
-
-      database.query(
-        sqlUser,
-        [username, password, role || "employee", employeeId],
-        (err2, result2) => {
-          if (err2) {
-            return res.status(500).json(err2);
-          }
-          return res.json({ message: "Thêm account thành công" });
-        },
-      );
-    } else {
-      res.json({ message: "Thêm user thành công" });
-    }
+    res.json({ message: "Xóa nhân viên thành công" });
   });
 });
 
@@ -162,7 +179,7 @@ app.get("/branches", (req, res) => {
 
   database.query(sql, (err, result) => {
     if (err) {
-      res.status(500).json(err);
+      return res.status(500).json(err);
     } else {
       res.json(result);
     }
@@ -181,6 +198,20 @@ app.post("/branches", (req, res) => {
     } else {
       res.json({ message: "Thêm chi nhánh thành công" });
     }
+  });
+});
+
+// Xóa chi nhánh
+app.delete("/branches/:id", (req, res) => {
+  const { id } = req.params;
+
+  const sql = "delete from Branch where branchId=?";
+
+  database.query(sql, [id], (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
+    }
+    res.json({ message: "Xóa chi nhánh thành công" });
   });
 });
 

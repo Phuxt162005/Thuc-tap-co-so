@@ -19,7 +19,7 @@ export default function Login({ setIsLogin, setRole }) {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message);
+        alert(data.message || "Lỗi đăng nhập");
         return;
       }
 

@@ -36,16 +36,21 @@ export default function Branch({ branches, setBranches, employees }) {
   };
 
   // xóa chi nhánh
-  const removeBranch = (id) => {
-    setBranches((prev) => prev.filter((b) => b.id !== id));
+  const removeBranch = async (id) => {
+    await fetch(`http://localhost:5000/branches/${id}`, {
+      method: "DELETE",
+    });
+
+    const res = await fetch("http://localhost:5000/branches");
+    const data = await res.json();
+    setBranches(data);
   };
 
   // 1 chi nhánh có bao nhiêu nhân viên
   const count = (branchId, role) => {
     if (!employees) return 0;
-    return employees.filter(
-      (e) => Number(e.branch) === Number(branchId) && e.role === role,
-    ).length;
+    return employees.filter((e) => Number(e.branchId) === Number(branchId))
+      .length;
   };
 
   return (
@@ -93,11 +98,9 @@ export default function Branch({ branches, setBranches, employees }) {
             </tr>
           ) : (
             branches.map((b) => (
-              <tr key={b.id}>
+              <tr key={b.branchId}>
                 <td className="td">{b.name}</td>
-                <td className="td">
-                  {new Date(b.openDate).toLocaleDateString("vi-VN")}
-                </td>
+                <td className="td">-</td>
 
                 <td className="td">
                   QL: {count(b.id, "Nhân viên quản lý")} <br />
@@ -107,7 +110,7 @@ export default function Branch({ branches, setBranches, employees }) {
                 <td className="td">
                   <button
                     className="btn btn-danger"
-                    onClick={() => removeBranch(b.id)}
+                    onClick={() => removeBranch(b.branchId)}
                   >
                     Xóa
                   </button>
