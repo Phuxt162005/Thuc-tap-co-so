@@ -184,7 +184,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                     return;
                   }
 
-                  const qty = Math.min(Number(value), i.stock);
+                  const qty = Math.min(Number(value || 1), i.stock);
 
                   setCart(
                     cart.map((item) =>

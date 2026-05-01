@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 export default function Report({ orders }) {
   // doanh thu
-  const revenue = orders.reduce((sum, o) => sum + o.total, 0);
+  const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
 
   return (
     <div>

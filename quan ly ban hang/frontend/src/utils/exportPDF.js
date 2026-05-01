@@ -19,7 +19,7 @@ export const exportPDF = (orders) => {
     o.invoiceId,
     new Date(o.date).toLocaleDateString("vi-VN"),
     o.items?.map((i) => `${i.name} x${i.quantity}`).join(", "),
-    o.total,
+    o.total || 0,
   ]);
 
   autoTable(doc, {

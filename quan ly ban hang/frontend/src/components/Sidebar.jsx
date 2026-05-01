@@ -6,7 +6,18 @@ export default function Sidebar({
   setIsLogin,
   role,
   setRole,
+  employees,
+  branches,
 }) {
+  const username = localStorage.getItem("username");
+
+  const employee = employees?.find((e) => e.username === username);
+
+  const branchName =
+    role === "admin"
+      ? "Admin"
+      : branches?.find((b) => b.branchId === employee?.branchId)?.name;
+
   const menuItems =
     role === "admin"
       ? [
@@ -20,7 +31,6 @@ export default function Sidebar({
             { key: "product", label: "Sản phẩm" },
             { key: "inventory", label: "Kho" },
             { key: "employee", label: "Nhân viên" },
-            { key: "branch", label: "Chi nhánh" },
             { key: "report", label: "Báo cáo" },
           ]
         : [
@@ -35,6 +45,14 @@ export default function Sidebar({
       {/* phần trên */}
       <div>
         <h2>MENU</h2>
+
+        {role !== "admin" && (
+          <div style={{ marginBottom: "20px", color: "#fff" }}>
+            Chi nhánh: {branchName || "Không xác định"}
+          </div>
+        )}
+
+        {role === "admin" && <div>Admin</div>}
 
         <ul className="menu">
           {menuItems.map((item) => (

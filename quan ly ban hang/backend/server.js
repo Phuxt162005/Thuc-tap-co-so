@@ -110,7 +110,11 @@ app.delete("/products/:id", (req, res) => {
 
 // Lấy danh sách nhân viên
 app.get("/employees", (req, res) => {
-  const sql = "select * from Employee";
+  const sql = `
+  select e.*, u.username, u.password, u.role
+  from Employee e
+  left join User u on e.employeeId = u.employeeId
+`;
 
   database.query(sql, (err, result) => {
     if (err) {
@@ -125,37 +129,33 @@ app.get("/employees", (req, res) => {
 app.post("/employees", (req, res) => {
   const { name, dob, phone, branchId, username, password, role } = req.body;
 
-  const sqlEpl = `insert into Employee(name, dob, phone, branchId, role) values(?, ?, ?, ?, ?)`;
+  const sqlEpl = `insert into Employee(name, dob, phone, branchId) values(?, ?, ?, ?)`;
 
-  database.query(
-    sqlEpl,
-    [name, dob, phone, branchId, role || "employee"],
-    (err1, result1) => {
-      if (err1) {
-        res.status(500).json(err1);
-      }
+  database.query(sqlEpl, [name, dob, phone, branchId], (err1, result1) => {
+    if (err1) {
+      res.status(500).json(err1);
+    }
 
-      const employeeId = result1.insertId;
+    const employeeId = result1.insertId;
 
-      // nếu có username thì tạo user
-      if (username && password) {
-        const sqlUser = `insert into User(username, password, role, employeeId) values(?, ?, ?, ?)`;
+    // nếu có username thì tạo user
+    if (username && password) {
+      const sqlUser = `insert into User(username, password, role, employeeId) values(?, ?, ?, ?)`;
 
-        database.query(
-          sqlUser,
-          [username, password, role || "employee", employeeId],
-          (err2, result2) => {
-            if (err2) {
-              return res.status(500).json(err2);
-            }
-            return res.json({ message: "Thêm account thành công" });
-          },
-        );
-      } else {
-        res.json({ message: "Thêm user thành công" });
-      }
-    },
-  );
+      database.query(
+        sqlUser,
+        [username, password, role || "employee", employeeId],
+        (err2, result2) => {
+          if (err2) {
+            return res.status(500).json(err2);
+          }
+          return res.json({ message: "Thêm account thành công" });
+        },
+      );
+    } else {
+      res.json({ message: "Thêm nhân viên thành công" });
+    }
+  });
 });
 
 // Xóa nhân viên
@@ -261,7 +261,7 @@ app.get("/orders", (req, res) => {
 app.post("/orders", (req, res) => {
   const { employeeId, customerId, total, items } = req.body;
 
-  const sql = `insert into Invoice(date, employeeId, customerId, total) value(now(), ?, ?, ?)`;
+  const sql = `insert into Invoice(date, employeeId, customerId, total) values(now(), ?, ?, ?)`;
 
   database.query(sql, [employeeId, customerId, total], (err, result) => {
     if (err) {

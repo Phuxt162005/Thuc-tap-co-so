@@ -15,7 +15,7 @@ export default function Inventory({ products, setProducts }) {
 
     if (!product) return;
 
-    const newStock = Number(product.stock) + Number(quantity);
+    const newStock = Number(product.stock) + Number(quantity || 0);
 
     try {
       await fetch(`http://localhost:5000/products/${productId}`, {

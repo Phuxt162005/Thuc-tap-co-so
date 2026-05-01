@@ -235,6 +235,8 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
         setIsLogin={setIsLogin}
         role={role}
         setRole={setRole}
+        employees={employees}
+        branches={branches}
       />
 
       <div className="main-content">{renderContent()}</div>

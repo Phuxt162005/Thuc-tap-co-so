@@ -91,18 +91,18 @@ CREATE TABLE User (
     username VARCHAR(50) UNIQUE,
     password VARCHAR(100),
     role VARCHAR(20),
-    employeeId INT,
+    employeeId INT UNIQUE,
     FOREIGN KEY (employeeId)
         REFERENCES Employee(employeeId)
         ON DELETE SET NULL
 );
 
 -- DATA
-INSERT INTO Branch(name) VALUES ("Chi nhánh 1");
+INSERT INTO Branch(name, address, phone) VALUES ("Chi nhánh 1", "282 - Quang Trung", "0347813915");
 
-INSERT INTO Employee(name, dob, phone, branchId, role) VALUES
-("Nguyen Van A", "2000-01-01", "0123", 1, "employee"),
-("Tran Van B", "2001-01-01", "0456", 1, "employee");
+INSERT INTO Employee(name, dob, phone, branchId) VALUES
+("Nguyen Van A", "2000-01-01", "0123", 1),
+("Tran Van B", "2001-01-01", "0456", 1);
 
 INSERT INTO User(username, password, role, employeeId) VALUES
 ("admin", "123", "admin", NULL),
@@ -110,6 +110,14 @@ INSERT INTO User(username, password, role, employeeId) VALUES
 ("nv1", "123", "employee", 1),
 ("nv2", "123", "employee", 2);
 
-UPDATE Employee e
-JOIN User u ON e.employeeId = u.employeeId
-SET e.role = u.role;
+INSERT INTO Customer(name, phone) VALUES ("Khách lẻ", "0000");
+
+INSERT INTO Employee(name, dob, phone, branchId)
+VALUES ("Manager 1", "1995-01-01", "0999", 1);
+
+INSERT INTO Employee(name, dob, phone, branchId)
+VALUES ("Manager 1", "1995-01-01", "0999", 1);
+
+INSERT INTO User(username, password, role, employeeId)
+VALUES ("manager1", "123", "manager", LAST_INSERT_ID());
+
