@@ -9,6 +9,8 @@ import Inventory from "./Inventory";
 import Employee from "./Employee";
 import Branch from "./Branch";
 import { exportPDF } from "../utils/exportPDF";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const api = "http://localhost:5000";
 
@@ -18,16 +20,17 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
   const [orders, setOrders] = useState([]);
   const [branches, setBranches] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
 
-  // khi đăng nhập
+  // DATE
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+
   useEffect(() => {
     if (role === "admin") setActivePage("employee");
     else setActivePage("dashboard");
   }, [role]);
 
-  // lấy sản phẩm từ backend
+  // load data
   useEffect(() => {
     fetch(`${api}/products`)
       .then((res) => res.json())
@@ -46,31 +49,36 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
       .then(setOrders);
   }, []);
 
+  // filter date
   const filteredOrders = orders.filter((o) => {
     if (!fromDate && !toDate) return true;
 
     const orderDate = new Date(o.date);
 
-    if (fromDate) {
-      const start = new Date(fromDate);
-      if (orderDate < start) return false;
+    if (fromDate && orderDate < fromDate) {
+      return false;
     }
+
     if (toDate) {
       const end = new Date(toDate);
+
       end.setHours(23, 59, 59, 999);
-      if (orderDate > end) return false;
+
+      if (orderDate > end) {
+        return false;
+      }
     }
 
     return true;
   });
 
-  // tổng doanh thu
+  // revenue
   const totalRevenue = filteredOrders.reduce(
     (sum, o) => sum + Number(o.total),
     0,
   );
 
-  // top sản phẩm bán chạy
+  // top products
   const topProducts = {};
 
   filteredOrders.forEach((order) => {
@@ -80,16 +88,16 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
       if (!topProducts[item.productId]) {
         topProducts[item.productId] = 0;
       }
+
       topProducts[item.productId] += item.quantity;
     });
   });
 
-  // sắp xếp top sản phẩm
   const sortedProducts = Object.entries(topProducts)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
+    .slice(0, 5);
 
-  // render nội dung
+  // render page
   const renderContent = () => {
     switch (activePage) {
       case "sales":
@@ -106,7 +114,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
         return <Product products={products} setProducts={setProducts} />;
 
       case "report":
-        return <Report orders={orders} />;
+        return <Report orders={orders} products={products} />;
 
       case "inventory":
         return <Inventory products={products} setProducts={setProducts} />;
@@ -115,6 +123,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
         if (role !== "admin" && role !== "manager") {
           return <p>Không có quyền truy cập</p>;
         }
+
         return (
           <Employee
             employees={employees}
@@ -128,6 +137,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
         if (role !== "admin" && role !== "manager") {
           return <p>Không có quyền truy cập</p>;
         }
+
         return (
           <Branch
             branches={branches}
@@ -141,49 +151,85 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
           <div>
             <h2>Thông tin bán hàng</h2>
 
-            <div style={{ marginBottom: "20px" }}>
-              <label>Từ ngày: </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-              />
+            {/* DATE PICKER */}
+            <div
+              style={{
+                display: "flex",
+                gap: "20px",
+                alignItems: "center",
+                marginBottom: "20px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <label>Từ ngày:</label>
 
-              <label style={{ marginLeft: "10px" }}>Đến ngày: </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-              />
+                <DatePicker
+                  selected={fromDate}
+                  onChange={(date) => setFromDate(date)}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Chọn ngày"
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label>Đến ngày:</label>
+
+                <DatePicker
+                  selected={toDate}
+                  onChange={(date) => setToDate(date)}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Chọn ngày"
+                  className="input"
+                />
+              </div>
 
               <button
+                className="btn"
                 onClick={() => {
-                  setFromDate("");
-                  setToDate("");
+                  setFromDate(null);
+                  setToDate(null);
                 }}
               >
                 Reset
               </button>
             </div>
 
+            {/* CARDS */}
             <div className="card-container">
+              {/* REVENUE */}
               <div className="card">
                 <h3>Doanh thu:</h3>
+
                 <p className="card-number">
                   {totalRevenue.toLocaleString()} VNĐ
                 </p>
               </div>
 
-              <div className="card">
+              {/* PRODUCTS */}
+              <div
+                className="card"
+                style={{ cursor: "pointer" }}
+                onClick={() => setActivePage("inventory")}
+              >
                 <h3>Sản phẩm:</h3>
+
                 <p className="card-number">{products.length}</p>
               </div>
 
-              <div className="card">
+              {/* ORDERS */}
+              <div
+                className="card"
+                style={{ cursor: "pointer" }}
+                onClick={() => setActivePage("report")}
+              >
                 <h3>Đơn hàng:</h3>
+
                 <p className="card-number">{filteredOrders.length}</p>
               </div>
 
+              {/* TOP PRODUCTS */}
               <div className="top-box">
                 <h3>Top sản phẩm bán chạy</h3>
 
@@ -197,11 +243,37 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                       );
 
                       return (
-                        <div key={id} className="top-item">
-                          <span>
-                            {index + 1}. {product?.name || "Unknown"}
-                          </span>
-                          <span> Đã bán: {qty}</span>
+                        <div
+                          key={id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "15px",
+                            marginBottom: "15px",
+                            padding: "10px",
+                            borderBottom: "1px solid #eee",
+                          }}
+                        >
+                          {product?.image && (
+                            <img
+                              src={product.image}
+                              alt=""
+                              style={{
+                                width: "60px",
+                                height: "60px",
+                                objectFit: "cover",
+                                borderRadius: "10px",
+                              }}
+                            />
+                          )}
+
+                          <div>
+                            <div style={{ fontWeight: "bold" }}>
+                              #{index + 1} {product?.name}
+                            </div>
+
+                            <div style={{ color: "#666" }}>Đã bán: {qty}</div>
+                          </div>
                         </div>
                       );
                     })
@@ -209,6 +281,8 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 </div>
               </div>
             </div>
+
+            {/* CHARTS */}
             {filteredOrders.length > 0 && (
               <RevenueChart orders={filteredOrders} />
             )}
@@ -216,8 +290,11 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
             {filteredOrders.length > 0 && (
               <TopProductChart orders={filteredOrders} products={products} />
             )}
+
+            {/* PDF */}
             <button
-              style={{ marginLeft: "10px" }}
+              style={{ marginTop: "20px" }}
+              className="btn btn-primary"
               onClick={() => exportPDF(filteredOrders)}
             >
               Xuất PDF

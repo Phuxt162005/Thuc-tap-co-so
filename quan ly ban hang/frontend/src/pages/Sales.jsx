@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function Sales({ products, setProducts, orders, setOrders }) {
   const [cart, setCart] = useState([]);
   const [cash, setCash] = useState("");
   const [search, setSearch] = useState("");
 
+  // thêm vào giỏ
   const addToCart = (product) => {
     setCart((prevCart) => {
       const existing = prevCart.find((i) => i.productId === product.productId);
@@ -27,18 +28,21 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
     });
   };
 
-  // xóa sản phẩm khỏi giỏ hàng
+  // xóa khỏi giỏ
   const removeFromCart = (id) => {
     setCart(cart.filter((i) => i.productId !== id));
   };
 
-  // tính tiền
-  const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  // tổng tiền
+  const total = cart.reduce(
+    (sum, i) => sum + Number(i.price) * Number(i.quantity),
+    0,
+  );
 
   // tiền thừa
-  const change = Number(cash) - total;
+  const change = Number(cash || 0) - total;
 
-  // trả tiền
+  // thanh toán
   const checkout = async () => {
     if (cart.length === 0) {
       alert("Giỏ hàng trống");
@@ -55,6 +59,8 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
       for (const item of cart) {
         const product = products.find((p) => p.productId === item.productId);
 
+        if (!product) continue;
+
         const newStock = Number(product.stock) - Number(item.quantity);
 
         if (newStock < 0) {
@@ -62,16 +68,23 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           return;
         }
 
+        // UPDATE FULL DATA
         await fetch(`http://localhost:5000/products/${item.productId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ stock: newStock }),
+          body: JSON.stringify({
+            name: product.name,
+            price: product.price,
+            stock: newStock,
+            image: product.image,
+            importPrice: product.importPrice || 0,
+          }),
         });
       }
 
-      // lưu hóa đơn
+      // tạo hóa đơn
       await fetch("http://localhost:5000/orders", {
         method: "POST",
         headers: {
@@ -89,20 +102,29 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         }),
       });
 
+      // reload products
       const res1 = await fetch("http://localhost:5000/products");
+
       const data1 = await res1.json();
+
       setProducts(data1);
 
       // reload orders
       const res2 = await fetch("http://localhost:5000/orders");
+
       const data2 = await res2.json();
+
       setOrders(data2);
 
+      // reset
       setCart([]);
       setCash("");
+
       alert("Thanh toán thành công!");
     } catch (err) {
       console.log(err);
+
+      alert("Lỗi thanh toán");
     }
   };
 
@@ -113,7 +135,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
   return (
     <div className="container-grid">
-      {/* product list */}
+      {/* PRODUCT */}
       <div>
         <input
           className="search-box"
@@ -132,10 +154,28 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                 className="product-card"
                 onClick={() => p.stock > 0 && addToCart(p)}
               >
+                {/* image */}
+                {p.image && (
+                  <img
+                    src={p.image}
+                    alt=""
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                      marginBottom: "10px",
+                    }}
+                  />
+                )}
+
+                {/* name */}
                 <h4>{p.name}</h4>
 
-                <p>{p.price.toLocaleString()} VNĐ</p>
+                {/* price */}
+                <p>{Number(p.price).toLocaleString("vi-VN")} VNĐ</p>
 
+                {/* stock */}
                 <p
                   style={{
                     color:
@@ -153,7 +193,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         </div>
       </div>
 
-      {/* giỏ hàng */}
+      {/* CART */}
       <div className="cart-box">
         <h3>Giỏ hàng</h3>
 
@@ -162,7 +202,11 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         {cart.map((i) => (
           <div key={i.productId} className="cart-item">
             <div className="cart-row">
-              <span>{i.name}</span>
+              <div>
+                <strong>{i.name}</strong>
+
+                <p>{Number(i.price).toLocaleString("vi-VN")} VNĐ</p>
+              </div>
 
               <input
                 type="number"
@@ -177,10 +221,14 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                     setCart(
                       cart.map((item) =>
                         item.productId === i.productId
-                          ? { ...item, quantity: "" }
+                          ? {
+                              ...item,
+                              quantity: "",
+                            }
                           : item,
                       ),
                     );
+
                     return;
                   }
 
@@ -189,7 +237,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                   setCart(
                     cart.map((item) =>
                       item.productId === i.productId
-                        ? { ...item, quantity: qty }
+                        ? {
+                            ...item,
+                            quantity: qty,
+                          }
                         : item,
                     ),
                   );
@@ -207,7 +258,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         ))}
 
         <h3 style={{ marginTop: "20px" }}>
-          Tổng: {total.toLocaleString()} VNĐ
+          Tổng: {Number(total).toLocaleString("vi-VN")} VNĐ
         </h3>
 
         <input
@@ -218,7 +269,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           onChange={(e) => setCash(e.target.value)}
         />
 
-        <p>Tiền thừa: {change > 0 ? change : 0}</p>
+        <p>
+          Tiền thừa: {change > 0 ? Number(change).toLocaleString("vi-VN") : 0}{" "}
+          VNĐ
+        </p>
 
         <button className="btn btn-success" onClick={checkout}>
           Thanh toán

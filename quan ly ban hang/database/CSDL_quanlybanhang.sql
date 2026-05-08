@@ -121,3 +121,11 @@ VALUES ("Manager 1", "1995-01-01", "0999", 1);
 INSERT INTO User(username, password, role, employeeId)
 VALUES ("manager1", "123", "manager", LAST_INSERT_ID());
 
+INSERT INTO Category(name)
+VALUES ("Mặc định");
+
+ALTER TABLE Product
+ADD image LONGTEXT;
+
+ALTER TABLE Product
+ADD importPrice DECIMAL(10,2) DEFAULT 0;

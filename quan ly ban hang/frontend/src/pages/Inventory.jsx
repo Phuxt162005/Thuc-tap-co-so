@@ -1,41 +1,97 @@
 import { useState } from "react";
 
 export default function Inventory({ products, setProducts }) {
-  const [productId, setProductId] = useState("");
+  const [search, setSearch] = useState("");
+
   const [quantity, setQuantity] = useState("");
+
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  // sort
+  const [nameSort, setNameSort] = useState("asc");
+
+  const [stockSort, setStockSort] = useState("default");
+
+  // load product
+  const loadProducts = async () => {
+    const res = await fetch("http://localhost:5000/products");
+
+    const data = await res.json();
+
+    setProducts(data);
+  };
 
   // nhập kho
   const importStock = async () => {
-    if (!productId || !quantity) {
-      alert("Vui lòng nhập đầy đủ thông tin");
+    if (!selectedProduct || !quantity) {
+      alert("Vui lòng nhập đầy đủ");
+
       return;
     }
 
-    const product = products.find((p) => p.productId === Number(productId));
-
-    if (!product) return;
-
-    const newStock = Number(product.stock) + Number(quantity || 0);
-
     try {
-      await fetch(`http://localhost:5000/products/${productId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const newStock = Number(selectedProduct.stock) + Number(quantity);
+
+      const res = await fetch(
+        `http://localhost:5000/products/${selectedProduct.productId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: selectedProduct.name,
+            price: selectedProduct.price,
+            stock: newStock,
+            image: selectedProduct.image || "",
+          }),
         },
-        body: JSON.stringify({ stock: newStock }),
-      });
+      );
 
-      const res = await fetch("http://localhost:5000/products");
       const data = await res.json();
-      setProducts(data);
 
-      setProductId("");
+      if (!res.ok) {
+        alert(data.message || "Lỗi");
+
+        return;
+      }
+
+      await loadProducts();
+
       setQuantity("");
+
+      setSelectedProduct(null);
+
+      setSearch("");
+
+      alert("Nhập kho thành công");
     } catch (err) {
       console.log(err);
     }
   };
+
+  // filter search
+  let filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  // sort tên
+  filteredProducts.sort((a, b) => {
+    if (nameSort === "asc") {
+      return a.name.localeCompare(b.name);
+    }
+
+    return b.name.localeCompare(a.name);
+  });
+
+  // sort tồn kho
+  if (stockSort === "asc") {
+    filteredProducts.sort((a, b) => a.stock - b.stock);
+  }
+
+  if (stockSort === "desc") {
+    filteredProducts.sort((a, b) => b.stock - a.stock);
+  }
 
   return (
     <div>
@@ -44,20 +100,15 @@ export default function Inventory({ products, setProducts }) {
       <h3>Nhập hàng</h3>
 
       <div className="form-box">
-        <select
+        {/* tìm sản phẩm */}
+        <input
           className="input"
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-        >
-          <option value="">Chọn sản phẩm</option>
+          placeholder="Tìm kiếm sản phẩm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-          {products.map((p) => (
-            <option key={p.productId} value={p.productId}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-
+        {/* số lượng */}
         <input
           className="input"
           type="number"
@@ -73,31 +124,150 @@ export default function Inventory({ products, setProducts }) {
 
       <hr />
 
+      {/* chọn sản phẩm */}
+      {search && (
+        <div
+          style={{
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            marginBottom: "20px",
+            maxHeight: "200px",
+            overflowY: "auto",
+          }}
+        >
+          {filteredProducts.map((p) => (
+            <div
+              key={p.productId}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px",
+                cursor: "pointer",
+                borderBottom: "1px solid #eee",
+              }}
+              onClick={() => {
+                setSelectedProduct(p);
+
+                setSearch(p.name);
+              }}
+            >
+              {p.image && (
+                <img
+                  src={p.image}
+                  alt=""
+                  style={{
+                    width: "50px",
+                    height: "50px",
+                    objectFit: "cover",
+                    borderRadius: "6px",
+                  }}
+                />
+              )}
+
+              <span>{p.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* sort */}
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          marginBottom: "20px",
+        }}
+      >
+        <select
+          className="input"
+          value={nameSort}
+          onChange={(e) => setNameSort(e.target.value)}
+        >
+          <option value="asc">Tên A → Z</option>
+
+          <option value="desc">Tên Z → A</option>
+        </select>
+
+        <select
+          className="input"
+          value={stockSort}
+          onChange={(e) => setStockSort(e.target.value)}
+        >
+          <option value="default">Tồn kho mặc định</option>
+
+          <option value="asc">Tồn kho tăng dần</option>
+
+          <option value="desc">Tồn kho giảm dần</option>
+        </select>
+      </div>
+
+      {/* table */}
       <table className="table">
         <thead>
           <tr>
             <th className="th">Tên sản phẩm</th>
-            <th className="th text-center">Tồn kho</th>
+
+            <th className="th">Tổng giá nhập</th>
+
+            <th className="th">Tồn kho</th>
           </tr>
         </thead>
 
         <tbody>
-          {products.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <tr>
-              <td colSpan="2" className="td empty">
-                Chưa có sản phẩm
+              <td className="td empty" colSpan="3">
+                Không có sản phẩm
               </td>
             </tr>
           ) : (
-            products.map((p) => (
+            filteredProducts.map((p) => (
               <tr key={p.productId}>
-                <td className="td">{p.name}</td>
+                <td className="td">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    {p.image && (
+                      <img
+                        src={p.image}
+                        alt=""
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          objectFit: "cover",
+                          borderRadius: "6px",
+                        }}
+                      />
+                    )}
+
+                    <span>{p.name}</span>
+                  </div>
+                </td>
 
                 <td
-                  className="td text-center"
+                  className="td"
                   style={{
-                    color:
-                      p.stock === 0 ? "red" : p.stock < 10 ? "orange" : "green",
+                    color: "#1976d2",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {(
+                    Number(p.stock) * Number(p.importPrice || 0)
+                  ).toLocaleString()}{" "}
+                  VNĐ
+                </td>
+
+                <td
+                  className="td"
+                  style={{
+                    color: "green",
+                    fontWeight: "bold",
                   }}
                 >
                   {p.stock}

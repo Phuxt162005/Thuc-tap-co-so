@@ -6,7 +6,8 @@ const database = require("./database");
 const app = express();
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 // Kết nối database
 database.connect((err) => {
@@ -60,38 +61,67 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ===== server.js =====
+
+// ---------- API Products ---------
+
 // thêm sản phẩm
 app.post("/products", (req, res) => {
-  const { name, price, stock, categoryId } = req.body;
+  const { name, price, stock, categoryId, image, importPrice } = req.body;
 
-  const sql = `insert into Product(name, price, stock, categoryId) values (?, ?, ?, ?)`;
+  const sql = `
+    insert into Product
+    (name, price, stock, categoryId, image, importPrice)
+    values (?, ?, ?, ?, ?, ?)
+  `;
 
-  database.query(sql, [name, price, stock, categoryId], (err, result) => {
-    if (err) {
-      return res.status(500).json(err);
-    } else {
-      res.json({ message: "Thêm sản phẩm thành công" });
-    }
-  });
+  database.query(
+    sql,
+    [name, price, stock, categoryId, image, importPrice],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      res.json({
+        message: "Thêm sản phẩm thành công",
+      });
+    },
+  );
 });
 
-// Cập nhật tồn kho
+// sửa sản phẩm
 app.put("/products/:id", (req, res) => {
   const { id } = req.params;
-  const { stock } = req.body;
 
-  const sql = `update Product set stock = ? where productId = ?`;
+  const { name, price, stock, image, importPrice } = req.body;
 
-  database.query(sql, [stock, id], (err, result) => {
-    if (err) {
-      return res.status(500).json(err);
-    } else {
-      res.json({ message: "Cập nhật vào kho thành công" });
-    }
-  });
+  const sql = `
+    update Product
+    set name = ?,
+        price = ?,
+        stock = ?,
+        image = ?,
+        importPrice = ?
+    where productId = ?
+  `;
+
+  database.query(
+    sql,
+    [name, price, stock, image, importPrice, id],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      res.json({
+        message: "Cập nhật sản phẩm thành công",
+      });
+    },
+  );
 });
 
-// Xóa sản phẩm
+// xóa sản phẩm
 app.delete("/products/:id", (req, res) => {
   const { id } = req.params;
 
@@ -158,6 +188,52 @@ app.post("/employees", (req, res) => {
   });
 });
 
+// sửa thông tin nhân viên
+app.put("/employees/:id", (req, res) => {
+  const { id } = req.params;
+
+  const { name, dob, branchId, username, password, role } = req.body;
+
+  const sqlEmployee = `
+    update Employee
+    set name = ?, dob = ?, branchId = ?
+    where employeeId = ?
+  `;
+
+  database.query(sqlEmployee, [name, dob, branchId, id], (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    // update user
+    if (username !== undefined && password !== undefined) {
+      const sqlUser = `
+          update User
+          set username = ?, password = ?, role = ?
+          where employeeId = ?
+        `;
+
+      database.query(
+        sqlUser,
+        [username, password, role, id],
+        (err2, result2) => {
+          if (err2) {
+            return res.status(500).json(err2);
+          }
+
+          return res.json({
+            message: "Cập nhật nhân viên thành công",
+          });
+        },
+      );
+    } else {
+      return res.json({
+        message: "Cập nhật nhân viên thành công",
+      });
+    }
+  });
+});
+
 // Xóa nhân viên
 app.delete("/employees/:id", (req, res) => {
   const { id } = req.params;
@@ -198,6 +274,28 @@ app.post("/branches", (req, res) => {
     } else {
       res.json({ message: "Thêm chi nhánh thành công" });
     }
+  });
+});
+
+// sửa chi nhánh
+app.put("/branches/:id", (req, res) => {
+  const { id } = req.params;
+  const { name, address, phone } = req.body;
+
+  const sql = `
+    update Branch
+    set name = ?, address = ?, phone = ?
+    where branchId = ?
+  `;
+
+  database.query(sql, [name, address, phone, id], (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    res.json({
+      message: "Cập nhật chi nhánh thành công",
+    });
   });
 });
 
