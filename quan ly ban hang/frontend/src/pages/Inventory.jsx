@@ -1,37 +1,70 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Inventory({ products, setProducts }) {
   const [search, setSearch] = useState("");
-
   const [quantity, setQuantity] = useState("");
-
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // sort
   const [nameSort, setNameSort] = useState("asc");
-
   const [stockSort, setStockSort] = useState("default");
 
-  // load product
+  // import history
+  const [importHistory, setImportHistory] = useState([]);
+  const [importDate, setImportDate] = useState("");
+
+  useEffect(() => {
+    loadProducts();
+    loadImports();
+  }, []);
+
+  // load products
   const loadProducts = async () => {
-    const res = await fetch("http://localhost:5000/products");
+    try {
+      const res = await fetch("http://localhost:5000/products");
+      const data = await res.json();
 
-    const data = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-    setProducts(data);
+  // load imports
+  const loadImports = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/imports");
+      const data = await res.json();
+
+      setImportHistory(data);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // nhập kho
   const importStock = async () => {
     if (!selectedProduct || !quantity) {
       alert("Vui lòng nhập đầy đủ");
-
       return;
     }
 
     try {
-      const newStock = Number(selectedProduct.stock) + Number(quantity);
+      const qty = Number(quantity);
 
+      if (qty <= 0) {
+        alert("Số lượng nhập không hợp lệ");
+        return;
+      }
+
+      const newStock = Number(selectedProduct.stock || 0) + qty;
+
+      const newTotalImported = Number(selectedProduct.totalImported || 0) + qty;
+
+      const newImportPrice =
+        Number(selectedProduct.importUnitPrice || 0) * newTotalImported;
+
+      // update product
       const res = await fetch(
         `http://localhost:5000/products/${selectedProduct.productId}`,
         {
@@ -39,11 +72,20 @@ export default function Inventory({ products, setProducts }) {
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             name: selectedProduct.name,
             price: selectedProduct.price,
             stock: newStock,
             image: selectedProduct.image || "",
+
+            importUnitPrice: selectedProduct.importUnitPrice || 0,
+
+            totalImported: newTotalImported,
+
+            importPrice: newImportPrice,
+
+            branchId: selectedProduct.branchId,
           }),
         },
       );
@@ -51,31 +93,48 @@ export default function Inventory({ products, setProducts }) {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Lỗi");
-
+        alert(data.message || "Lỗi nhập kho");
         return;
       }
 
+      // save import history
+      await fetch("http://localhost:5000/imports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          productId: selectedProduct.productId,
+
+          quantity: qty,
+
+          totalPrice: qty * Number(selectedProduct.importUnitPrice || 0),
+
+          branchId: selectedProduct.branchId,
+        }),
+      });
+
       await loadProducts();
+      await loadImports();
 
       setQuantity("");
-
       setSelectedProduct(null);
-
       setSearch("");
 
       alert("Nhập kho thành công");
     } catch (err) {
       console.log(err);
+      alert("Lỗi nhập kho");
     }
   };
 
-  // filter search
+  // search
   let filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // sort tên
+  // sort name
   filteredProducts.sort((a, b) => {
     if (nameSort === "asc") {
       return a.name.localeCompare(b.name);
@@ -84,7 +143,7 @@ export default function Inventory({ products, setProducts }) {
     return b.name.localeCompare(a.name);
   });
 
-  // sort tồn kho
+  // sort stock
   if (stockSort === "asc") {
     filteredProducts.sort((a, b) => a.stock - b.stock);
   }
@@ -93,6 +152,30 @@ export default function Inventory({ products, setProducts }) {
     filteredProducts.sort((a, b) => b.stock - a.stock);
   }
 
+  // filter import by day
+  const filteredImports = importHistory.filter((item) => {
+    if (!importDate) return true;
+
+    const itemDate = new Date(item.importDate);
+
+    // yyyy-mm-dd theo local máy
+    const itemLocalDate = itemDate.toLocaleDateString("sv-SE");
+
+    return itemLocalDate === importDate;
+  });
+
+  // total import by selected day
+  const totalImportByDate = filteredImports.reduce(
+    (sum, item) => sum + Number(item.totalPrice || 0),
+    0,
+  );
+
+  // total import warehouse
+  const totalInventoryImport = filteredProducts.reduce(
+    (sum, p) => sum + Number(p.importPrice || 0),
+    0,
+  );
+
   return (
     <div>
       <h2>Kho</h2>
@@ -100,7 +183,6 @@ export default function Inventory({ products, setProducts }) {
       <h3>Nhập hàng</h3>
 
       <div className="form-box">
-        {/* tìm sản phẩm */}
         <input
           className="input"
           placeholder="Tìm kiếm sản phẩm"
@@ -108,7 +190,6 @@ export default function Inventory({ products, setProducts }) {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* số lượng */}
         <input
           className="input"
           type="number"
@@ -124,7 +205,7 @@ export default function Inventory({ products, setProducts }) {
 
       <hr />
 
-      {/* chọn sản phẩm */}
+      {/* select product */}
       {search && (
         <div
           style={{
@@ -149,7 +230,6 @@ export default function Inventory({ products, setProducts }) {
               }}
               onClick={() => {
                 setSelectedProduct(p);
-
                 setSearch(p.name);
               }}
             >
@@ -203,78 +283,141 @@ export default function Inventory({ products, setProducts }) {
         </select>
       </div>
 
+      {/* date filter */}
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: "20px",
+        }}
+      >
+        <div>
+          <label>Ngày nhập kho</label>
+
+          <input
+            type="date"
+            className="input"
+            value={importDate}
+            onChange={(e) => setImportDate(e.target.value)}
+          />
+        </div>
+
+        <div
+          style={{
+            background: "#f5f5f5",
+            padding: "20px",
+            borderRadius: "10px",
+          }}
+        >
+          <h4>
+            {importDate
+              ? `Tổng nhập ngày ${new Date(importDate).toLocaleDateString(
+                  "vi-VN",
+                )}`
+              : "Tổng nhập tất cả ngày"}
+          </h4>
+
+          <div
+            style={{
+              fontSize: "28px",
+              fontWeight: "bold",
+              color: "#1976d2",
+            }}
+          >
+            {totalImportByDate.toLocaleString()} VNĐ
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#f5f5f5",
+            padding: "20px",
+            borderRadius: "10px",
+          }}
+        >
+          <h4>Tổng tiền nhập kho</h4>
+
+          <div
+            style={{
+              fontSize: "28px",
+              fontWeight: "bold",
+              color: "green",
+            }}
+          >
+            {totalInventoryImport.toLocaleString()} VNĐ
+          </div>
+        </div>
+      </div>
+
       {/* table */}
       <table className="table">
         <thead>
           <tr>
-            <th className="th">Tên sản phẩm</th>
-
-            <th className="th">Tổng giá nhập</th>
-
-            <th className="th">Tồn kho</th>
+            <th>Tên SP</th>
+            <th>Giá nhập</th>
+            <th>Tổng SL nhập</th>
+            <th>Tổng giá nhập</th>
+            <th>Tồn kho</th>
           </tr>
         </thead>
 
         <tbody>
-          {filteredProducts.length === 0 ? (
-            <tr>
-              <td className="td empty" colSpan="3">
-                Không có sản phẩm
+          {filteredProducts.map((p) => (
+            <tr key={p.productId}>
+              <td>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  {p.image && <img src={p.image} alt="" width="50" />}
+
+                  {p.name}
+                </div>
               </td>
+
+              <td>{Number(p.importUnitPrice || 0).toLocaleString()} VNĐ</td>
+
+              <td>{p.totalImported || 0}</td>
+
+              <td>{Number(p.importPrice || 0).toLocaleString()} VNĐ</td>
+
+              <td>{p.stock}</td>
             </tr>
-          ) : (
-            filteredProducts.map((p) => (
-              <tr key={p.productId}>
-                <td className="td">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    {p.image && (
-                      <img
-                        src={p.image}
-                        alt=""
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          objectFit: "cover",
-                          borderRadius: "6px",
-                        }}
-                      />
-                    )}
+          ))}
+        </tbody>
+      </table>
 
-                    <span>{p.name}</span>
-                  </div>
-                </td>
+      <hr />
 
-                <td
-                  className="td"
-                  style={{
-                    color: "#1976d2",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {(
-                    Number(p.stock) * Number(p.importPrice || 0)
-                  ).toLocaleString()}{" "}
-                  VNĐ
-                </td>
+      <h3>Lịch sử nhập kho</h3>
 
-                <td
-                  className="td"
-                  style={{
-                    color: "green",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {p.stock}
-                </td>
-              </tr>
-            ))
-          )}
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Ngày nhập</th>
+            <th>Sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Tổng tiền</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {filteredImports.map((item) => (
+            <tr key={item.importId}>
+              <td>{new Date(item.importDate).toLocaleString("vi-VN")}</td>
+
+              <td>{item.name}</td>
+
+              <td>{item.quantity}</td>
+
+              <td>{Number(item.totalPrice).toLocaleString()} VNĐ</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

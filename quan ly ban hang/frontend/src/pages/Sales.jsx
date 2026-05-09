@@ -68,32 +68,65 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           return;
         }
 
-        // UPDATE FULL DATA
-        await fetch(`http://localhost:5000/products/${item.productId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
+        // cập nhật sản phẩm
+        const res = await fetch(
+          `http://localhost:5000/products/${item.productId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              name: product.name,
+              price: Number(product.price || 0),
+              image: product.image || "",
+              stock: newStock,
+              importUnitPrice: Number(product.importUnitPrice || 0),
+              totalImported: Number(product.totalImported || 0),
+              importPrice: Number(product.importPrice || 0),
+              categoryId: Number(product.categoryId || 1),
+              branchId:
+                Number(product.branchId) ||
+                Number(localStorage.getItem("branchId")),
+            }),
           },
-          body: JSON.stringify({
-            name: product.name,
-            price: product.price,
-            stock: newStock,
-            image: product.image,
-            importPrice: product.importPrice || 0,
-          }),
-        });
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.message || "Lỗi cập nhật kho");
+          return;
+        }
       }
 
       // tạo hóa đơn
-      await fetch("http://localhost:5000/orders", {
+      // tạo hóa đơn
+      const employeeId = localStorage.getItem("employeeId");
+
+      const branchId = localStorage.getItem("branchId");
+
+      if (!employeeId) {
+        alert("Không xác định nhân viên đăng nhập");
+        return;
+      }
+
+      const orderRes = await fetch("http://localhost:5000/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
-          employeeId: 1,
+          employeeId: Number(employeeId),
+
           customerId: 1,
+
           total,
+
+          branchId: Number(branchId),
+
           items: cart.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,
@@ -102,6 +135,12 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         }),
       });
 
+      const orderData = await orderRes.json();
+
+      if (!orderRes.ok) {
+        alert(orderData.message || "Lỗi tạo hóa đơn");
+        return;
+      }
       // reload products
       const res1 = await fetch("http://localhost:5000/products");
 

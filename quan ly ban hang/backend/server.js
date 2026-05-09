@@ -23,24 +23,15 @@ app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
-// ---------- API product ----------
-app.get("/products", (req, res) => {
-  const sql = "select * from Product";
-
-  database.query(sql, (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: "Lỗi server" });
-    } else {
-      res.json(result);
-    }
-  });
-});
-
 // login
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  const sql = "select * from `User` where username = ? and password = ?";
+  const sql = `select u.*, e.branchId
+              from User u
+              left join Employee e on u.employeeId = e.employeeId
+              where username = ?
+              and password = ?`;
 
   database.query(sql, [username, password], (err, result) => {
     if (err) {
@@ -57,6 +48,8 @@ app.post("/login", (req, res) => {
       message: "Đăng nhập thành công",
       role: user.role,
       username: user.username,
+      branchId: user.branchId,
+      employeeId: user.employeeId,
     });
   });
 });
@@ -65,27 +58,100 @@ app.post("/login", (req, res) => {
 
 // ---------- API Products ---------
 
+// lấy toàn bộ sản phẩm
+app.get("/products", (req, res) => {
+  const sql = "select * from Product";
+
+  database.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: "Lỗi server" });
+    } else {
+      res.json(result);
+    }
+  });
+});
+
 // thêm sản phẩm
 app.post("/products", (req, res) => {
-  const { name, price, stock, categoryId, image, importPrice } = req.body;
+  const { name, price, stock, categoryId, image, importUnitPrice, branchId } =
+    req.body;
+
+  const totalImported = Number(stock || 0);
+
+  const importPrice = Number(importUnitPrice || 0) * totalImported;
 
   const sql = `
-    insert into Product
-    (name, price, stock, categoryId, image, importPrice)
-    values (?, ?, ?, ?, ?, ?)
+    INSERT INTO Product
+    (
+      name,
+      price,
+      stock,
+      categoryId,
+      image,
+      importUnitPrice,
+      totalImported,
+      importPrice,
+      branchId
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   database.query(
     sql,
-    [name, price, stock, categoryId, image, importPrice],
+    [
+      name,
+      price,
+      stock,
+      categoryId,
+      image,
+      importUnitPrice || 0,
+      totalImported,
+      importPrice,
+      branchId,
+    ],
     (err, result) => {
       if (err) {
         return res.status(500).json(err);
       }
 
-      res.json({
-        message: "Thêm sản phẩm thành công",
-      });
+      const productId = result.insertId;
+
+      // nếu có nhập tồn kho ban đầu
+      if (Number(stock) > 0) {
+        const importSql = `
+          INSERT INTO ImportHistory
+          (
+            productId,
+            quantity,
+            totalPrice,
+            branchId,
+            importDate
+          )
+          VALUES (?, ?, ?, ?, NOW())
+        `;
+
+        database.query(
+          importSql,
+          [productId, stock, importPrice, branchId],
+          (importErr) => {
+            if (importErr) {
+              console.log(importErr);
+
+              return res.status(500).json({
+                message: "Lỗi lưu lịch sử nhập",
+              });
+            }
+
+            return res.json({
+              message: "Thêm sản phẩm thành công",
+            });
+          },
+        );
+      } else {
+        return res.json({
+          message: "Thêm sản phẩm thành công",
+        });
+      }
     },
   );
 });
@@ -94,7 +160,17 @@ app.post("/products", (req, res) => {
 app.put("/products/:id", (req, res) => {
   const { id } = req.params;
 
-  const { name, price, stock, image, importPrice } = req.body;
+  const {
+    name,
+    price,
+    stock,
+    image,
+    importUnitPrice,
+    totalImported,
+    branchId,
+  } = req.body;
+
+  const importPrice = Number(importUnitPrice || 0) * Number(totalImported || 0);
 
   const sql = `
     update Product
@@ -102,14 +178,27 @@ app.put("/products/:id", (req, res) => {
         price = ?,
         stock = ?,
         image = ?,
-        importPrice = ?
+        importUnitPrice = ?,
+        totalImported = ?,
+        importPrice = ?,
+        branchId = ?
     where productId = ?
   `;
 
   database.query(
     sql,
-    [name, price, stock, image, importPrice, id],
-    (err, result) => {
+    [
+      name,
+      price,
+      stock,
+      image,
+      importUnitPrice || 0,
+      totalImported || 0,
+      importPrice,
+      branchId,
+      id,
+    ],
+    (err) => {
       if (err) {
         return res.status(500).json(err);
       }
@@ -194,9 +283,12 @@ app.put("/employees/:id", (req, res) => {
 
   const { name, dob, branchId, username, password, role } = req.body;
 
+  // update employee
   const sqlEmployee = `
     update Employee
-    set name = ?, dob = ?, branchId = ?
+    set name = ?,
+        dob = ?,
+        branchId = ?
     where employeeId = ?
   `;
 
@@ -205,18 +297,25 @@ app.put("/employees/:id", (req, res) => {
       return res.status(500).json(err);
     }
 
-    // update user
-    if (username !== undefined && password !== undefined) {
-      const sqlUser = `
-          update User
-          set username = ?, password = ?, role = ?
-          where employeeId = ?
-        `;
+    // update user account
+    const checkUserSql = "select * from User where employeeId = ?";
 
-      database.query(
-        sqlUser,
-        [username, password, role, id],
-        (err2, result2) => {
+    database.query(checkUserSql, [id], (checkErr, users) => {
+      if (checkErr) {
+        return res.status(500).json(checkErr);
+      }
+
+      // nếu đã có account -> update
+      if (users.length > 0) {
+        const sqlUser = `
+              update User
+              set username = ?,
+                  password = ?,
+                  role = ?
+              where employeeId = ?
+            `;
+
+        database.query(sqlUser, [username, password, role, id], (err2) => {
           if (err2) {
             return res.status(500).json(err2);
           }
@@ -224,13 +323,32 @@ app.put("/employees/:id", (req, res) => {
           return res.json({
             message: "Cập nhật nhân viên thành công",
           });
-        },
-      );
-    } else {
-      return res.json({
-        message: "Cập nhật nhân viên thành công",
-      });
-    }
+        });
+      }
+
+      // chưa có account -> tạo mới
+      else {
+        const insertUserSql = `
+              insert into User
+              (username, password, role, employeeId)
+              values (?, ?, ?, ?)
+            `;
+
+        database.query(
+          insertUserSql,
+          [username, password, role || "employee", id],
+          (err3) => {
+            if (err3) {
+              return res.status(500).json(err3);
+            }
+
+            return res.json({
+              message: "Cập nhật nhân viên thành công",
+            });
+          },
+        );
+      }
+    });
   });
 });
 
@@ -317,18 +435,39 @@ app.delete("/branches/:id", (req, res) => {
 
 // Lấy hóa đơn
 app.get("/orders", (req, res) => {
-  const sql = `select i.invoiceId, i.date, i.total, d.productId, p.name, d.quantity, d.price 
-  from Invoice i
-  left join InvoiceDetail d on i.invoiceId = d.invoiceId
-  left join Product p on d.productId = p.productId
-  order by i.invoiceId desc`;
+  const sql = `
+    SELECT
+      i.invoiceId,
+      i.date,
+      i.total,
+      i.branchId,
+
+      e.name AS employeeName,
+
+      d.productId,
+      p.name,
+      d.quantity,
+      d.price
+
+    FROM Invoice i
+
+    LEFT JOIN Employee e
+    ON i.employeeId = e.employeeId
+
+    LEFT JOIN InvoiceDetail d
+    ON i.invoiceId = d.invoiceId
+
+    LEFT JOIN Product p
+    ON d.productId = p.productId
+
+    ORDER BY i.invoiceId DESC
+  `;
 
   database.query(sql, (err, result) => {
     if (err) {
       return res.status(500).json(err);
     }
 
-    // gom dữ liệu lại
     const orders = {};
 
     result.forEach((row) => {
@@ -337,6 +476,11 @@ app.get("/orders", (req, res) => {
           invoiceId: row.invoiceId,
           date: row.date,
           total: row.total,
+          branchId: row.branchId,
+
+          // thêm người tạo đơn
+          employeeName: row.employeeName || "Không xác định",
+
           items: [],
         };
       }
@@ -357,38 +501,100 @@ app.get("/orders", (req, res) => {
 
 // Tạo hóa đơn + chi tiết hóa đơn
 app.post("/orders", (req, res) => {
-  const { employeeId, customerId, total, items } = req.body;
+  const { employeeId, customerId, total, items, branchId } = req.body;
 
-  const sql = `insert into Invoice(date, employeeId, customerId, total) values(now(), ?, ?, ?)`;
+  const sql = `insert into Invoice(date, employeeId, customerId, total, branchId) values(now(), ?, ?, ?, ?)`;
 
-  database.query(sql, [employeeId, customerId, total], (err, result) => {
-    if (err) {
-      return res.status(500).json(err);
-    }
+  database.query(
+    sql,
+    [employeeId, customerId, total, branchId],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
 
-    const invoiceId = result.insertId;
+      const invoiceId = result.insertId;
 
-    if (!items || items.length === 0) {
-      return res.json({
-        message: "Tạo hóa đơn thành công",
+      if (!items || items.length === 0) {
+        return res.json({
+          message: "Tạo hóa đơn thành công",
+          invoiceId,
+        });
+      }
+
+      const detailValues = items.map((item) => [
         invoiceId,
+        item.productId,
+        item.quantity,
+        item.price,
+      ]);
+
+      const detailSql = `insert into InvoiceDetail(invoiceId, productId, quantity, price) values ?`;
+
+      database.query(detailSql, [detailValues], (detailErr, detailResult) => {
+        if (detailErr) {
+          return res.status(500).json(detailErr);
+        }
+        res.json({ message: "Than toán thành công!", invoiceId });
+      });
+    },
+  );
+});
+
+// ---------- API IMPORT HISTORY ----------
+
+// lấy lịch sử nhập
+app.get("/imports", (req, res) => {
+  const sql = `
+    SELECT
+      i.*,
+      p.name,
+      p.image,
+      p.importUnitPrice
+    FROM ImportHistory i
+    JOIN Product p
+    ON i.productId = p.productId
+    ORDER BY i.importDate DESC
+  `;
+
+  database.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Lỗi lấy lịch sử nhập",
       });
     }
 
-    const detailValues = items.map((item) => [
-      invoiceId,
-      item.productId,
-      item.quantity,
-      item.price,
-    ]);
+    res.json(result);
+  });
+});
 
-    const detailSql = `insert into InvoiceDetail(invoiceId, productId, quantity, price) values ?`;
+// thêm lịch sử nhập
+app.post("/imports", (req, res) => {
+  const { productId, quantity, totalPrice, branchId } = req.body;
 
-    database.query(detailSql, [detailValues], (detailErr, detailResult) => {
-      if (detailErr) {
-        return res.status(500).json(detailErr);
-      }
-      res.json({ message: "Than toán thành công!", invoiceId });
+  const sql = `
+    INSERT INTO ImportHistory
+    (
+      productId,
+      quantity,
+      totalPrice,
+      branchId,
+      importDate
+    )
+    VALUES (?, ?, ?, ?, NOW())
+  `;
+
+  database.query(sql, [productId, quantity, totalPrice, branchId], (err) => {
+    if (err) {
+      console.log(err);
+
+      return res.status(500).json({
+        message: "Lỗi lưu lịch sử nhập",
+      });
+    }
+
+    res.json({
+      message: "Lưu lịch sử nhập thành công",
     });
   });
 });

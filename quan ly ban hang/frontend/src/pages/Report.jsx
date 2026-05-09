@@ -5,12 +5,30 @@ export default function Report({ orders, products }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
+  // SEARCH EMPLOYEE
+  const [employeeSearch, setEmployeeSearch] = useState("");
+
   // FILTER ORDERS
   const filteredOrders = orders.filter((o) => {
-    if (!fromDate && !toDate) return true;
+    // lọc tên người tạo
+    const employeeMatch =
+      !employeeSearch ||
+      (o.employeeName || "")
+        .toLowerCase()
+        .includes(employeeSearch.toLowerCase());
+
+    if (!employeeMatch) {
+      return false;
+    }
+
+    // không lọc ngày
+    if (!fromDate && !toDate) {
+      return true;
+    }
 
     const orderDate = new Date(o.date);
 
+    // từ ngày
     if (fromDate) {
       const start = new Date(fromDate);
 
@@ -19,6 +37,7 @@ export default function Report({ orders, products }) {
       }
     }
 
+    // đến ngày
     if (toDate) {
       const end = new Date(toDate);
 
@@ -32,13 +51,13 @@ export default function Report({ orders, products }) {
     return true;
   });
 
-  // TOTAL REVENUE
+  // tổng tiền bán
   const totalRevenue = filteredOrders.reduce(
     (sum, o) => sum + Number(o.total || 0),
     0,
   );
 
-  // TOTAL IMPORT
+  // tổng tiền nhập của hàng đã bán
   let totalImport = 0;
 
   filteredOrders.forEach((order) => {
@@ -46,12 +65,13 @@ export default function Report({ orders, products }) {
       const product = products.find((p) => p.productId === item.productId);
 
       if (product) {
-        totalImport += Number(product.importPrice || 0) * Number(item.quantity);
+        totalImport +=
+          Number(product.importUnitPrice || 0) * Number(item.quantity);
       }
     });
   });
 
-  // PROFIT
+  // lợi nhuận
   const profit = totalRevenue - totalImport;
 
   return (
@@ -68,6 +88,7 @@ export default function Report({ orders, products }) {
           flexWrap: "wrap",
         }}
       >
+        {/* từ ngày */}
         <div>
           <label>Từ ngày:</label>
 
@@ -81,6 +102,7 @@ export default function Report({ orders, products }) {
           />
         </div>
 
+        {/* đến ngày */}
         <div>
           <label>Đến ngày:</label>
 
@@ -94,19 +116,35 @@ export default function Report({ orders, products }) {
           />
         </div>
 
+        {/* tìm người tạo đơn */}
+        <div>
+          <label>Người tạo đơn:</label>
+
+          <br />
+
+          <input
+            className="input"
+            placeholder="Tìm theo tên nhân viên"
+            value={employeeSearch}
+            onChange={(e) => setEmployeeSearch(e.target.value)}
+          />
+        </div>
+
+        {/* reset */}
         <button
           className="btn"
           style={{ marginTop: "20px" }}
           onClick={() => {
             setFromDate("");
             setToDate("");
+            setEmployeeSearch("");
           }}
         >
           Reset
         </button>
       </div>
 
-      {/* REPORT CARDS */}
+      {/* REPORT */}
       <div
         style={{
           display: "grid",
@@ -115,32 +153,42 @@ export default function Report({ orders, products }) {
           marginBottom: "30px",
         }}
       >
-        {/* TOTAL ORDER */}
+        {/* tổng đơn */}
         <div className="card">
           <h3>Tổng đơn</h3>
 
           <p className="card-number">{filteredOrders.length}</p>
         </div>
 
-        {/* TOTAL IMPORT */}
+        {/* tổng nhập */}
         <div className="card">
           <h3>Tổng tiền nhập</h3>
 
-          <p className="card-number" style={{ color: "#1976d2" }}>
+          <p
+            className="card-number"
+            style={{
+              color: "#1976d2",
+            }}
+          >
             {totalImport.toLocaleString()} VNĐ
           </p>
         </div>
 
-        {/* REVENUE */}
+        {/* tổng bán */}
         <div className="card">
           <h3>Tổng tiền bán</h3>
 
-          <p className="card-number" style={{ color: "green" }}>
+          <p
+            className="card-number"
+            style={{
+              color: "green",
+            }}
+          >
             {totalRevenue.toLocaleString()} VNĐ
           </p>
         </div>
 
-        {/* PROFIT */}
+        {/* lợi nhuận */}
         <div className="card">
           <h3>Lãi</h3>
 
@@ -155,7 +203,7 @@ export default function Report({ orders, products }) {
         </div>
       </div>
 
-      {/* HISTORY */}
+      {/* lịch sử bán */}
       <h3>Lịch sử bán hàng</h3>
 
       {filteredOrders.length === 0 ? (
@@ -178,6 +226,11 @@ export default function Report({ orders, products }) {
             </p>
 
             <p>
+              <strong>Người tạo đơn:</strong>{" "}
+              {o.employeeName || "Không xác định"}
+            </p>
+
+            <p>
               <strong>Ngày:</strong> {new Date(o.date).toLocaleString("vi-VN")}
             </p>
 
@@ -187,33 +240,27 @@ export default function Report({ orders, products }) {
 
             <hr />
 
-            {o.items.map((item, index) => {
-              const product = products.find(
-                (p) => p.productId === item.productId,
-              );
-
-              return (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "10px",
-                  }}
-                >
-                  <div>
-                    {item.name} x {item.quantity}
-                  </div>
-
-                  <div>
-                    {(
-                      Number(item.price) * Number(item.quantity)
-                    ).toLocaleString()}{" "}
-                    VNĐ
-                  </div>
+            {o.items.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "10px",
+                }}
+              >
+                <div>
+                  {item.name} x {item.quantity}
                 </div>
-              );
-            })}
+
+                <div>
+                  {(
+                    Number(item.price) * Number(item.quantity)
+                  ).toLocaleString()}{" "}
+                  VNĐ
+                </div>
+              </div>
+            ))}
           </div>
         ))
       )}

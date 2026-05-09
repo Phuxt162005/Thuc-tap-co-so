@@ -16,40 +16,76 @@ const api = "http://localhost:5000";
 
 export default function Dashboard({ setIsLogin, role, setRole }) {
   const [activePage, setActivePage] = useState("");
+
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [branches, setBranches] = useState([]);
   const [employees, setEmployees] = useState([]);
 
-  // DATE
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
 
+  const branchId = localStorage.getItem("branchId");
+
+  // khi login
   useEffect(() => {
-    if (role === "admin") setActivePage("employee");
-    else setActivePage("dashboard");
+    if (role === "admin") {
+      setActivePage("employee");
+    } else {
+      setActivePage("dashboard");
+    }
   }, [role]);
 
   // load data
   useEffect(() => {
-    fetch(`${api}/products`)
-      .then((res) => res.json())
-      .then(setProducts);
-
-    fetch(`${api}/branches`)
-      .then((res) => res.json())
-      .then(setBranches);
-
-    fetch(`${api}/employees`)
-      .then((res) => res.json())
-      .then(setEmployees);
-
-    fetch(`${api}/orders`)
-      .then((res) => res.json())
-      .then(setOrders);
+    loadData();
   }, []);
 
-  // filter date
+  const loadData = async () => {
+    try {
+      // products
+      const productRes = await fetch(`${api}/products`);
+      const productData = await productRes.json();
+
+      const filteredProducts =
+        role === "admin"
+          ? productData
+          : productData.filter((p) => Number(p.branchId) === Number(branchId));
+
+      setProducts(filteredProducts);
+
+      // branches
+      const branchRes = await fetch(`${api}/branches`);
+      const branchData = await branchRes.json();
+      setBranches(branchData);
+
+      // employees
+      const employeeRes = await fetch(`${api}/employees`);
+      const employeeData = await employeeRes.json();
+
+      const filteredEmployees =
+        role === "admin"
+          ? employeeData
+          : employeeData.filter((e) => Number(e.branchId) === Number(branchId));
+
+      setEmployees(filteredEmployees);
+
+      // orders
+      const orderRes = await fetch(`${api}/orders`);
+      const orderData = await orderRes.json();
+
+      const filteredOrders =
+        role === "admin"
+          ? orderData
+          : orderData.filter((o) => Number(o.branchId) === Number(branchId));
+
+      setOrders(filteredOrders);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // lọc ngày
   const filteredOrders = orders.filter((o) => {
     if (!fromDate && !toDate) return true;
 
@@ -61,7 +97,6 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
     if (toDate) {
       const end = new Date(toDate);
-
       end.setHours(23, 59, 59, 999);
 
       if (orderDate > end) {
@@ -72,7 +107,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
     return true;
   });
 
-  // revenue
+  // tổng doanh thu
   const totalRevenue = filteredOrders.reduce(
     (sum, o) => sum + Number(o.total),
     0,
@@ -97,7 +132,6 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  // render page
   const renderContent = () => {
     switch (activePage) {
       case "sales":
@@ -120,24 +154,15 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
         return <Inventory products={products} setProducts={setProducts} />;
 
       case "employee":
-        if (role !== "admin" && role !== "manager") {
-          return <p>Không có quyền truy cập</p>;
-        }
-
         return (
           <Employee
             employees={employees}
             setEmployees={setEmployees}
             branches={branches}
-            setBranches={setBranches}
           />
         );
 
       case "branch":
-        if (role !== "admin" && role !== "manager") {
-          return <p>Không có quyền truy cập</p>;
-        }
-
         return (
           <Branch
             branches={branches}
@@ -151,7 +176,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
           <div>
             <h2>Thông tin bán hàng</h2>
 
-            {/* DATE PICKER */}
+            {/* DATE */}
             <div
               style={{
                 display: "flex",
@@ -196,9 +221,8 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
               </button>
             </div>
 
-            {/* CARDS */}
+            {/* CARD */}
             <div className="card-container">
-              {/* REVENUE */}
               <div className="card">
                 <h3>Doanh thu:</h3>
 
@@ -207,10 +231,11 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 </p>
               </div>
 
-              {/* PRODUCTS */}
               <div
                 className="card"
-                style={{ cursor: "pointer" }}
+                style={{
+                  cursor: "pointer",
+                }}
                 onClick={() => setActivePage("inventory")}
               >
                 <h3>Sản phẩm:</h3>
@@ -218,10 +243,11 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 <p className="card-number">{products.length}</p>
               </div>
 
-              {/* ORDERS */}
               <div
                 className="card"
-                style={{ cursor: "pointer" }}
+                style={{
+                  cursor: "pointer",
+                }}
                 onClick={() => setActivePage("report")}
               >
                 <h3>Đơn hàng:</h3>
@@ -229,7 +255,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 <p className="card-number">{filteredOrders.length}</p>
               </div>
 
-              {/* TOP PRODUCTS */}
+              {/* TOP PRODUCT */}
               <div className="top-box">
                 <h3>Top sản phẩm bán chạy</h3>
 
@@ -250,8 +276,6 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                             alignItems: "center",
                             gap: "15px",
                             marginBottom: "15px",
-                            padding: "10px",
-                            borderBottom: "1px solid #eee",
                           }}
                         >
                           {product?.image && (
@@ -268,11 +292,15 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                           )}
 
                           <div>
-                            <div style={{ fontWeight: "bold" }}>
+                            <div
+                              style={{
+                                fontWeight: "bold",
+                              }}
+                            >
                               #{index + 1} {product?.name}
                             </div>
 
-                            <div style={{ color: "#666" }}>Đã bán: {qty}</div>
+                            <div>Đã bán: {qty}</div>
                           </div>
                         </div>
                       );
@@ -282,7 +310,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
               </div>
             </div>
 
-            {/* CHARTS */}
+            {/* CHART */}
             {filteredOrders.length > 0 && (
               <RevenueChart orders={filteredOrders} />
             )}
@@ -291,10 +319,11 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
               <TopProductChart orders={filteredOrders} products={products} />
             )}
 
-            {/* PDF */}
             <button
-              style={{ marginTop: "20px" }}
               className="btn btn-primary"
+              style={{
+                marginTop: "20px",
+              }}
               onClick={() => exportPDF(filteredOrders)}
             >
               Xuất PDF

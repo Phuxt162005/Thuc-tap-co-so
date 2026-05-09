@@ -4,6 +4,8 @@ export default function Product({ products, setProducts }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
+
+  // giá nhập 1 đơn vị sản phẩm
   const [importPrice, setImportPrice] = useState("");
 
   // image
@@ -17,6 +19,7 @@ export default function Product({ products, setProducts }) {
   const [editingId, setEditingId] = useState(null);
 
   const role = localStorage.getItem("role");
+  const branchId = Number(localStorage.getItem("branchId"));
 
   // load products
   const loadProduct = async () => {
@@ -27,12 +30,14 @@ export default function Product({ products, setProducts }) {
     setProducts(data);
   };
 
-  // search
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()),
+  // lọc theo chi nhánh + search
+  const filteredProducts = products.filter(
+    (p) =>
+      Number(p.branchId) === branchId &&
+      p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // upload image
+  // upload ảnh
   const handleImageChange = (e) => {
     const file = e.target.files[0];
 
@@ -47,11 +52,10 @@ export default function Product({ products, setProducts }) {
     reader.readAsDataURL(file);
   };
 
-  // add product
+  // thêm sản phẩm
   const addProduct = async () => {
     if (!name || !price || !stock || !importPrice) {
       alert("Nhập đầy đủ thông tin sản phẩm!");
-
       return;
     }
 
@@ -65,9 +69,16 @@ export default function Product({ products, setProducts }) {
           name,
           price: Number(price),
           stock: Number(stock),
-          categoryId: 1,
           image,
-          importPrice: Number(importPrice),
+
+          // giá nhập 1 sản phẩm
+          importUnitPrice: Number(importPrice),
+
+          // tổng nhập ban đầu
+          totalImported: Number(stock),
+
+          categoryId: 1,
+          branchId,
         }),
       });
 
@@ -75,13 +86,12 @@ export default function Product({ products, setProducts }) {
 
       if (!res.ok) {
         alert(data.message || "Lỗi");
-
         return;
       }
 
       await loadProduct();
 
-      // reset
+      // reset form
       setName("");
       setPrice("");
       setStock("");
@@ -94,9 +104,11 @@ export default function Product({ products, setProducts }) {
     }
   };
 
-  // update product
+  // sửa sản phẩm
   const updateProduct = async (id) => {
     try {
+      const currentProduct = products.find((p) => p.productId === id);
+
       const res = await fetch(`http://localhost:5000/products/${id}`, {
         method: "PUT",
         headers: {
@@ -104,10 +116,20 @@ export default function Product({ products, setProducts }) {
         },
         body: JSON.stringify({
           name,
-          price: parseFloat(price || 0),
-          stock: parseInt(stock || 0),
+
+          price: Number(price),
+
+          stock: Number(stock),
+
           image,
-          importPrice: parseFloat(importPrice || 0),
+
+          // giữ đúng giá nhập
+          importUnitPrice: Number(importPrice || 0),
+
+          // KHÔNG reset số lượng nhập
+          totalImported: currentProduct?.totalImported || 0,
+
+          branchId: currentProduct?.branchId || branchId,
         }),
       });
 
@@ -120,6 +142,7 @@ export default function Product({ products, setProducts }) {
 
       await loadProduct();
 
+      // reset
       setEditingId(null);
 
       setName("");
@@ -134,9 +157,11 @@ export default function Product({ products, setProducts }) {
     }
   };
 
-  // remove product
+  // xóa sản phẩm
   const removeProduct = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa?")) return;
+    if (!window.confirm("Bạn có chắc muốn xóa?")) {
+      return;
+    }
 
     try {
       await fetch(`http://localhost:5000/products/${id}`, {
@@ -159,7 +184,7 @@ export default function Product({ products, setProducts }) {
       {role === "manager" && (
         <>
           <div className="form-box">
-            {/* name */}
+            {/* tên */}
             <input
               className="input"
               type="text"
@@ -168,7 +193,7 @@ export default function Product({ products, setProducts }) {
               onChange={(e) => setName(e.target.value)}
             />
 
-            {/* import price */}
+            {/* giá nhập */}
             <input
               className="input"
               type="number"
@@ -177,7 +202,7 @@ export default function Product({ products, setProducts }) {
               onChange={(e) => setImportPrice(e.target.value)}
             />
 
-            {/* sell price */}
+            {/* giá bán */}
             <input
               className="input"
               type="number"
@@ -186,7 +211,7 @@ export default function Product({ products, setProducts }) {
               onChange={(e) => setPrice(e.target.value)}
             />
 
-            {/* stock */}
+            {/* số lượng */}
             <input
               className="input"
               type="number"
@@ -195,10 +220,10 @@ export default function Product({ products, setProducts }) {
               onChange={(e) => setStock(e.target.value)}
             />
 
-            {/* image */}
+            {/* upload ảnh */}
             <input type="file" accept="image/*" onChange={handleImageChange} />
 
-            {/* preview image */}
+            {/* preview ảnh */}
             {image && (
               <div>
                 <img
@@ -327,18 +352,18 @@ export default function Product({ products, setProducts }) {
                   </div>
                 </td>
 
-                {/* import price */}
+                {/* giá nhập */}
                 <td className="td">
-                  {Number(p.importPrice || 0).toLocaleString()} VNĐ
+                  {Number(p.importUnitPrice || 0).toLocaleString()} VNĐ
                 </td>
 
-                {/* sell price */}
+                {/* giá bán */}
                 <td className="td">{Number(p.price).toLocaleString()} VNĐ</td>
 
-                {/* stock */}
+                {/* tồn kho */}
                 <td className="td">{p.stock}</td>
 
-                {/* actions */}
+                {/* action */}
                 {role === "manager" && (
                   <td className="td">
                     <button
@@ -348,7 +373,7 @@ export default function Product({ products, setProducts }) {
 
                         setName(p.name);
 
-                        setImportPrice(p.importPrice || "");
+                        setImportPrice(p.importUnitPrice || "");
 
                         setPrice(p.price);
 
