@@ -199,8 +199,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                     src={p.image}
                     alt=""
                     style={{
-                      width: "120px",
-                      height: "120px",
+                      width: "110px",
+                      height: "110px",
+                      display: "block",
+                      margin: "0 auto 14px",
                       objectFit: "cover",
                       borderRadius: "10px",
                       marginBottom: "10px",
@@ -240,13 +242,15 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
         {cart.map((i) => (
           <div key={i.productId} className="cart-item">
+            {/* thông tin sản phẩm */}
+            <div className="cart-info">
+              <strong>{i.name}</strong>
+
+              <p>{Number(i.price).toLocaleString("vi-VN")} VNĐ</p>
+            </div>
+
+            {/* số lượng + xóa */}
             <div className="cart-row">
-              <div>
-                <strong>{i.name}</strong>
-
-                <p>{Number(i.price).toLocaleString("vi-VN")} VNĐ</p>
-              </div>
-
               <input
                 type="number"
                 min="1"
@@ -285,14 +289,14 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
                   );
                 }}
               />
-            </div>
 
-            <button
-              className="btn btn-danger"
-              onClick={() => removeFromCart(i.productId)}
-            >
-              Xóa
-            </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => removeFromCart(i.productId)}
+              >
+                Xóa
+              </button>
+            </div>
           </div>
         ))}
 

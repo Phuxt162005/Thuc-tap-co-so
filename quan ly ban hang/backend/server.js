@@ -23,6 +23,7 @@ app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
+// ---------- Login ----------
 // login
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
@@ -50,6 +51,38 @@ app.post("/login", (req, res) => {
       username: user.username,
       branchId: user.branchId,
       employeeId: user.employeeId,
+    });
+  });
+});
+
+// quên mật khẩu
+app.post("/forgot-password", (req, res) => {
+  const { username, phone } = req.body;
+
+  const sql = `
+    SELECT u.password
+    FROM User u
+    JOIN Employee e
+    ON u.employeeId = e.employeeId
+    WHERE u.username = ?
+    AND e.phone = ?
+  `;
+
+  database.query(sql, [username, phone], (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Lỗi server",
+      });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        message: "Sai username hoặc số điện thoại",
+      });
+    }
+
+    res.json({
+      password: result[0].password,
     });
   });
 });
@@ -230,17 +263,26 @@ app.delete("/products/:id", (req, res) => {
 // Lấy danh sách nhân viên
 app.get("/employees", (req, res) => {
   const sql = `
-  select e.*, u.username, u.password, u.role
-  from Employee e
-  left join User u on e.employeeId = u.employeeId
-`;
+    SELECT e.*, u.username, u.password, u.role, p.basicSalary, p.month, p.year
+    FROM Employee e
+    LEFT JOIN User u
+    ON e.employeeId = u.employeeId
+    LEFT JOIN Payroll p
+    ON p.payrollId = (
+      SELECT payrollId
+      FROM Payroll
+      WHERE employeeId = e.employeeId
+      ORDER BY year DESC, month DESC
+      LIMIT 1
+    )
+  `;
 
   database.query(sql, (err, result) => {
     if (err) {
       return res.status(500).json(err);
-    } else {
-      res.json(result);
     }
+
+    res.json(result);
   });
 });
 
@@ -268,11 +310,11 @@ app.post("/employees", (req, res) => {
           if (err2) {
             return res.status(500).json(err2);
           }
-          return res.json({ message: "Thêm account thành công" });
+          return res.json({ message: "Thêm account thành công", employeeId });
         },
       );
     } else {
-      res.json({ message: "Thêm nhân viên thành công" });
+      res.json({ message: "Thêm nhân viên thành công", employeeId });
     }
   });
 });
@@ -281,39 +323,35 @@ app.post("/employees", (req, res) => {
 app.put("/employees/:id", (req, res) => {
   const { id } = req.params;
 
-  const { name, dob, branchId, username, password, role } = req.body;
+  const { name, dob, phone, branchId, username, password, role } = req.body;
 
   // update employee
   const sqlEmployee = `
-    update Employee
-    set name = ?,
-        dob = ?,
-        branchId = ?
-    where employeeId = ?
+    UPDATE Employee
+    SET name = ?, dob = ?, phone = ?, branchId = ?
+    WHERE employeeId = ?
   `;
 
-  database.query(sqlEmployee, [name, dob, branchId, id], (err, result) => {
+  database.query(sqlEmployee, [name, dob, phone, branchId, id], (err) => {
     if (err) {
       return res.status(500).json(err);
     }
 
-    // update user account
-    const checkUserSql = "select * from User where employeeId = ?";
+    // kiểm tra user đã tồn tại chưa
+    const checkUserSql = "SELECT * FROM User WHERE employeeId = ?";
 
     database.query(checkUserSql, [id], (checkErr, users) => {
       if (checkErr) {
         return res.status(500).json(checkErr);
       }
 
-      // nếu đã có account -> update
+      // đã có account -> update
       if (users.length > 0) {
         const sqlUser = `
-              update User
-              set username = ?,
-                  password = ?,
-                  role = ?
-              where employeeId = ?
-            `;
+            UPDATE User
+            SET username = ?, password = ?, role = ?
+            WHERE employeeId = ?
+          `;
 
         database.query(sqlUser, [username, password, role, id], (err2) => {
           if (err2) {
@@ -329,10 +367,10 @@ app.put("/employees/:id", (req, res) => {
       // chưa có account -> tạo mới
       else {
         const insertUserSql = `
-              insert into User
-              (username, password, role, employeeId)
-              values (?, ?, ?, ?)
-            `;
+            INSERT INTO User
+            (username, password, role, employeeId)
+            VALUES (?, ?, ?, ?)
+          `;
 
         database.query(
           insertUserSql,
@@ -363,6 +401,41 @@ app.delete("/employees/:id", (req, res) => {
     }
     res.json({ message: "Xóa nhân viên thành công" });
   });
+});
+
+// ---------- API payroll ---------
+app.post("/payroll", (req, res) => {
+  const { employeeId, basicSalary, month, year, bonus, deduction } = req.body;
+
+  const sql = `
+    INSERT INTO Payroll (employeeId, month, year, basicSalary, bonus, deduction, totalSalary, paymentDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+  `;
+
+  const totalSalary =
+    Number(basicSalary || 0) + Number(bonus || 0) - Number(deduction || 0);
+
+  database.query(
+    sql,
+    [
+      employeeId,
+      month,
+      year,
+      basicSalary,
+      bonus || 0,
+      deduction || 0,
+      totalSalary,
+    ],
+    (err) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      res.json({
+        message: "Cập nhật lương thành công",
+      });
+    },
+  );
 });
 
 // ---------- API Branch ----------

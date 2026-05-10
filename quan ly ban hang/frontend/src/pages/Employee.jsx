@@ -6,7 +6,10 @@ export default function Employee({ employees, setEmployees, branches }) {
   const [name, setName] = useState("");
   const [dob, setDob] = useState(null);
   const [branch, setBranch] = useState("");
+  const [salary, setSalary] = useState("");
+  const [phone, setPhone] = useState("");
 
+  // login
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -42,57 +45,21 @@ export default function Employee({ employees, setEmployees, branches }) {
   const filteredEmployees = employees.filter((e) => {
     const keyword = search.toLowerCase();
 
-    // tìm role gần đúng
-    const managerKeywords = [
-      "q",
-      "qu",
-      "qua",
-      "quan",
-      "quản",
-      "ql",
-      "m",
-      "ma",
-      "man",
-      "mana",
-      "manager",
-    ];
-
-    const employeeKeywords = [
-      "n",
-      "nh",
-      "nha",
-      "nhan",
-      "nhân",
-      "nv",
-      "e",
-      "em",
-      "emp",
-      "empl",
-      "employee",
-      "s",
-      "st",
-      "sta",
-      "staf",
-      "staff",
-    ];
-
-    const roleMatch =
-      (managerKeywords.some((k) => k.includes(keyword)) &&
-        e.role === "manager") ||
-      (employeeKeywords.some((k) => k.includes(keyword)) &&
-        e.role === "employee");
-
     return (
       e.name.toLowerCase().includes(keyword) ||
       getBranchName(e.branchId).toLowerCase().includes(keyword) ||
-      (e.username || "").toLowerCase().includes(keyword) ||
-      roleMatch
+      (e.username || "").toLowerCase().includes(keyword)
     );
   });
 
   // thêm nhân viên
   const addEmployee = async () => {
-    if (!name.trim() || !dob || branch === "") {
+    const branchId =
+      roleLogin === "manager"
+        ? Number(localStorage.getItem("branchId"))
+        : Number(branch);
+
+    if (!name.trim() || !dob || !branchId) {
       alert("Vui lòng nhập đầy đủ thông tin");
       return;
     }
@@ -105,17 +72,14 @@ export default function Employee({ employees, setEmployees, branches }) {
         },
         body: JSON.stringify({
           name,
-
           dob: dob ? dob.toISOString().split("T")[0] : null,
-
-          phone: "",
-
-          branchId: Number(branch),
-
+          phone,
+          branchId:
+            roleLogin === "manager"
+              ? Number(localStorage.getItem("branchId"))
+              : Number(branch),
           username: roleLogin === "admin" ? username : null,
-
           password: roleLogin === "admin" ? password : null,
-
           role: roleLogin === "admin" ? role : "employee",
         }),
       });
@@ -127,12 +91,30 @@ export default function Employee({ employees, setEmployees, branches }) {
         return;
       }
 
+      // thêm payroll
+      if (salary) {
+        await fetch("http://localhost:5000/payroll", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            employeeId: data.employeeId,
+            basicSalary: Number(salary),
+            month: new Date().getMonth() + 1,
+            year: new Date().getFullYear(),
+          }),
+        });
+      }
+
       await loadEmployees();
 
       // reset
       setName("");
       setDob(null);
+      setPhone("");
       setBranch("");
+      setSalary("");
       setUsername("");
       setPassword("");
       setRole("employee");
@@ -153,15 +135,11 @@ export default function Employee({ employees, setEmployees, branches }) {
         },
         body: JSON.stringify({
           name,
-
           dob: dob ? dob.toISOString().split("T")[0] : null,
-
+          phone,
           branchId: Number(branch),
-
           username,
-
           password,
-
           role,
         }),
       });
@@ -173,6 +151,20 @@ export default function Employee({ employees, setEmployees, branches }) {
         return;
       }
 
+      // update payroll
+      await fetch("http://localhost:5000/payroll", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId: id,
+          basicSalary: Number(salary),
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear(),
+        }),
+      });
+
       await loadEmployees();
 
       setEditingId(null);
@@ -181,6 +173,8 @@ export default function Employee({ employees, setEmployees, branches }) {
       setName("");
       setDob(null);
       setBranch("");
+      setSalary("");
+      setPhone("");
       setUsername("");
       setPassword("");
       setRole("employee");
@@ -212,12 +206,13 @@ export default function Employee({ employees, setEmployees, branches }) {
     <div>
       <h2>Quản lý nhân viên</h2>
 
-      {/* FORM */}
+      {/* form */}
       <div className="form-box">
-        {/* branch */}
         <select
           className="input"
-          value={branch}
+          value={
+            roleLogin === "manager" ? localStorage.getItem("branchId") : branch
+          }
           onChange={(e) => setBranch(e.target.value)}
           disabled={roleLogin !== "admin"}
         >
@@ -230,7 +225,6 @@ export default function Employee({ employees, setEmployees, branches }) {
           ))}
         </select>
 
-        {/* name */}
         <input
           className="input"
           placeholder="Tên"
@@ -238,8 +232,15 @@ export default function Employee({ employees, setEmployees, branches }) {
           onChange={(e) => setName(e.target.value)}
         />
 
+        <input
+          className="input"
+          placeholder="Số điện thoại"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+
         <p>Ngày sinh:</p>
-        {/* dob */}
+
         <DatePicker
           selected={dob}
           onChange={(date) => setDob(date)}
@@ -252,10 +253,17 @@ export default function Employee({ employees, setEmployees, branches }) {
           maxDate={new Date()}
         />
 
-        {/* admin */}
+        {/* lương */}
+        <input
+          className="input"
+          type="number"
+          placeholder="Lương"
+          value={salary}
+          onChange={(e) => setSalary(e.target.value)}
+        />
+
         {roleLogin === "admin" && (
           <>
-            {/* username */}
             <input
               className="input"
               placeholder="Username"
@@ -263,7 +271,6 @@ export default function Employee({ employees, setEmployees, branches }) {
               onChange={(e) => setUsername(e.target.value)}
             />
 
-            {/* password */}
             <input
               className="input"
               placeholder="Password"
@@ -271,7 +278,6 @@ export default function Employee({ employees, setEmployees, branches }) {
               onChange={(e) => setPassword(e.target.value)}
             />
 
-            {/* role */}
             <select
               className="input"
               value={role}
@@ -284,7 +290,6 @@ export default function Employee({ employees, setEmployees, branches }) {
           </>
         )}
 
-        {/* button */}
         {editingId !== null ? (
           <button
             className="btn btn-success"
@@ -301,47 +306,18 @@ export default function Employee({ employees, setEmployees, branches }) {
 
       <hr />
 
-      {/* search */}
-      <div className="form-box">
-        <input
-          className="input"
-          placeholder="Tìm kiếm nhân viên"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-
-        <button
-          className="btn btn-primary"
-          onClick={() => setSearch(searchInput)}
-        >
-          Tìm kiếm
-        </button>
-
-        <button
-          className="btn"
-          onClick={() => {
-            setSearch("");
-            setSearchInput("");
-          }}
-        >
-          Reset
-        </button>
-      </div>
-
-      <hr />
-
-      {/* TABLE */}
+      {/* table */}
       <table className="table">
         <thead>
           <tr>
             <th>Tên</th>
             <th>Ngày sinh</th>
+            <th>Số điện thoại</th>
             <th>Chi nhánh</th>
+            <th>Lương</th>
 
             {roleLogin === "admin" && <th>Username</th>}
-
             {roleLogin === "admin" && <th>Password</th>}
-
             {roleLogin === "admin" && <th>Vai trò</th>}
 
             <th>Action</th>
@@ -349,63 +325,52 @@ export default function Employee({ employees, setEmployees, branches }) {
         </thead>
 
         <tbody>
-          {filteredEmployees.length === 0 ? (
-            <tr>
-              <td colSpan={roleLogin === "admin" ? 7 : 4}>
-                Không tìm thấy nhân viên
+          {filteredEmployees.map((e) => (
+            <tr key={e.employeeId}>
+              <td>{e.name}</td>
+
+              <td>
+                {e.dob ? new Date(e.dob).toLocaleDateString("vi-VN") : ""}
+              </td>
+
+              <td>{e.phone}</td>
+
+              <td>{getBranchName(e.branchId)}</td>
+
+              <td>{Number(e.basicSalary || 0).toLocaleString("vi-VN")} VNĐ</td>
+              {roleLogin === "admin" && <td>{e.username}</td>}
+              {roleLogin === "admin" && <td>{e.password}</td>}
+              {roleLogin === "admin" && (
+                <td>{e.role === "manager" ? "Quản lý" : "Nhân viên"}</td>
+              )}
+
+              <td>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditingId(e.employeeId);
+                    setName(e.name);
+                    setDob(e.dob ? new Date(e.dob) : null);
+                    setPhone(e.phone || "");
+                    setBranch(String(e.branchId));
+                    setSalary(e.basicSalary || "");
+                    setUsername(e.username || "");
+                    setPassword(e.password || "");
+                    setRole(e.role || "employee");
+                  }}
+                >
+                  Sửa
+                </button>
+
+                <button
+                  className="btn btn-danger"
+                  onClick={() => removeEmployee(e.employeeId)}
+                >
+                  Xóa
+                </button>
               </td>
             </tr>
-          ) : (
-            filteredEmployees.map((e) => (
-              <tr key={e.employeeId}>
-                <td>{e.name}</td>
-
-                <td>
-                  {e.dob ? new Date(e.dob).toLocaleDateString("vi-VN") : ""}
-                </td>
-
-                <td>{getBranchName(e.branchId)}</td>
-
-                {roleLogin === "admin" && <td>{e.username}</td>}
-
-                {roleLogin === "admin" && <td>{e.password}</td>}
-
-                {roleLogin === "admin" && (
-                  <td>{e.role === "manager" ? "Quản lý" : "Nhân viên"}</td>
-                )}
-
-                <td>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setEditingId(e.employeeId);
-
-                      setName(e.name);
-
-                      setDob(e.dob ? new Date(e.dob) : null);
-
-                      setBranch(String(e.branchId));
-
-                      setUsername(e.username || "");
-
-                      setPassword(e.password || "");
-
-                      setRole(e.role || "employee");
-                    }}
-                  >
-                    Sửa
-                  </button>
-
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => removeEmployee(e.employeeId)}
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
+          ))}
         </tbody>
       </table>
     </div>

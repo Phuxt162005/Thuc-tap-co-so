@@ -1,10 +1,11 @@
 import { useState } from "react";
 import backgrImg from "../assets/img/back-ground-login.jpg";
+import ForgotPassword from "./ForgotPassword";
 
 export default function Login({ setIsLogin, setRole }) {
   const [username, setUsername] = useState("");
-
   const [password, setPassword] = useState("");
+  const [forgotMode, setForgotMode] = useState(false);
 
   // xử lý đăng nhập
   const handleLogin = async () => {
@@ -46,6 +47,11 @@ export default function Login({ setIsLogin, setRole }) {
     }
   };
 
+  // forgot password
+  if (forgotMode) {
+    return <ForgotPassword setForgotMode={setForgotMode} />;
+  }
+
   return (
     <div className="login-wrapper">
       <div
@@ -84,9 +90,9 @@ export default function Login({ setIsLogin, setRole }) {
 
         {/* link */}
         <div className="link-box">
-          <span className="link">Đăng ký</span>
-
-          <span className="link">Quên mật khẩu</span>
+          <span className="link" onClick={() => setForgotMode(true)}>
+            Quên mật khẩu
+          </span>
         </div>
       </div>
     </div>

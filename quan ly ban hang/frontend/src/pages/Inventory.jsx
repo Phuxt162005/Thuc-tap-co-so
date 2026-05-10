@@ -411,7 +411,7 @@ export default function Inventory({ products, setProducts }) {
             <tr key={item.importId}>
               <td>{new Date(item.importDate).toLocaleString("vi-VN")}</td>
 
-              <td>{item.name}</td>
+              <td className="td">{item.name}</td>
 
               <td>{item.quantity}</td>
 
