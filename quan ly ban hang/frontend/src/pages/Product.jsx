@@ -21,20 +21,35 @@ export default function Product({ products, setProducts }) {
   const role = localStorage.getItem("role");
   const branchId = Number(localStorage.getItem("branchId"));
 
+  // token
+  const token = localStorage.getItem("token");
+
   // load products
   const loadProduct = async () => {
-    const res = await fetch("http://localhost:5000/products");
+    try {
+      const res = await fetch("http://localhost:5000/products", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
 
-    const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Lỗi tải sản phẩm");
+        return;
+      }
 
-    setProducts(data);
+      setProducts(data.filter((p) => Number(p.branchId) === branchId));
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // lọc theo chi nhánh + search
   const filteredProducts = products.filter(
     (p) =>
-      Number(p.branchId) === branchId &&
-      p.name.toLowerCase().includes(search.toLowerCase()),
+      Number(p.branchId || 0) === branchId &&
+      (p.name || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   // upload ảnh
@@ -44,16 +59,23 @@ export default function Product({ products, setProducts }) {
     if (!file) return;
 
     const reader = new FileReader();
-
     reader.onloadend = () => {
       setImage(reader.result);
     };
-
     reader.readAsDataURL(file);
   };
 
   // thêm sản phẩm
   const addProduct = async () => {
+    if (
+      !name.trim() ||
+      Number(price) <= 0 ||
+      Number(stock) < 0 ||
+      Number(importPrice) <= 0
+    ) {
+      alert("Thông tin sản phẩm không hợp lệ!");
+      return;
+    }
     if (!name || !price || !stock || !importPrice) {
       alert("Nhập đầy đủ thông tin sản phẩm!");
       return;
@@ -64,24 +86,20 @@ export default function Product({ products, setProducts }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
+
         body: JSON.stringify({
-          name,
+          name: name.trim(),
           price: Number(price),
           stock: Number(stock),
           image,
-
-          // giá nhập 1 sản phẩm
           importUnitPrice: Number(importPrice),
-
-          // tổng nhập ban đầu
           totalImported: Number(stock),
-
           categoryId: 1,
           branchId,
         }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -106,6 +124,16 @@ export default function Product({ products, setProducts }) {
 
   // sửa sản phẩm
   const updateProduct = async (id) => {
+    if (
+      !name.trim() ||
+      Number(price) <= 0 ||
+      Number(stock) < 0 ||
+      Number(importPrice) < 0
+    ) {
+      alert("Thông tin cập nhật không hợp lệ");
+      return;
+    }
+
     try {
       const currentProduct = products.find((p) => p.productId === id);
 
@@ -113,43 +141,34 @@ export default function Product({ products, setProducts }) {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name,
-
           price: Number(price),
-
           stock: Number(stock),
-
           image,
-
-          // giữ đúng giá nhập
           importUnitPrice: Number(importPrice || 0),
-
-          // KHÔNG reset số lượng nhập
           totalImported: currentProduct?.totalImported || 0,
-
           branchId: currentProduct?.branchId || branchId,
         }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
         alert(data.message || "Lỗi cập nhật");
         return;
       }
-
       await loadProduct();
 
-      // reset
       setEditingId(null);
-
       setName("");
       setPrice("");
       setStock("");
       setImportPrice("");
       setImage("");
+      setSearch("");
+      setSearchInput("");
 
       alert("Cập nhật thành công");
     } catch (err) {
@@ -164,11 +183,18 @@ export default function Product({ products, setProducts }) {
     }
 
     try {
-      await fetch(`http://localhost:5000/products/${id}`, {
+      const res = await fetch(`http://localhost:5000/products/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      const data = await res.json();
 
-      await loadProduct();
+      if (!res.ok) {
+        alert(data.message || "Lỗi xóa");
+        return;
+      }
 
       alert("Xóa thành công");
     } catch (err) {
@@ -282,7 +308,12 @@ export default function Product({ products, setProducts }) {
 
         <button
           className="btn btn-primary"
-          onClick={() => setSearch(searchInput)}
+          onClick={() => setSearch(searchInput.trim())}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              setSearch(searchInput.trim());
+            }
+          }}
         >
           Tìm kiếm
         </button>
@@ -305,11 +336,8 @@ export default function Product({ products, setProducts }) {
         <thead style={{ background: "#c9c9c9" }}>
           <tr>
             <th className="th">Tên</th>
-
             <th className="th">Giá nhập</th>
-
             <th className="th">Giá bán</th>
-
             <th className="th">Tồn kho</th>
 
             {role === "manager" && <th className="th">Action</th>}
@@ -370,15 +398,10 @@ export default function Product({ products, setProducts }) {
                       className="btn btn-primary"
                       onClick={() => {
                         setEditingId(p.productId);
-
                         setName(p.name);
-
                         setImportPrice(p.importUnitPrice || "");
-
                         setPrice(p.price);
-
                         setStock(p.stock);
-
                         setImage(p.image || "");
                       }}
                     >

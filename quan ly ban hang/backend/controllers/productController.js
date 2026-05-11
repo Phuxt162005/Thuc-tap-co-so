@@ -20,10 +20,18 @@ const createProduct = (req, res) => {
   const { name, price, stock, categoryId, image, importUnitPrice, branchId } =
     req.body;
 
+  // validate
+  if (!name || !price || stock === undefined || !branchId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin sản phẩm",
+    });
+  }
+
   const totalImported = Number(stock || 0);
   const importPrice = Number(importUnitPrice || 0) * totalImported;
 
-  const sql = `INSERT INTO Product (name, price, stock, categoryId, image, importUnitPrice, totalImported, importPrice, branchId)
+  const sql = `INSERT INTO Product
+    (name, price, stock, categoryId, image, importUnitPrice, totalImported, importPrice, branchId)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   database.query(
@@ -32,8 +40,8 @@ const createProduct = (req, res) => {
       name,
       price,
       stock,
-      categoryId,
-      image,
+      categoryId || 1,
+      image || "",
       importUnitPrice || 0,
       totalImported,
       importPrice,
@@ -44,10 +52,19 @@ const createProduct = (req, res) => {
         return res.status(500).json(err);
       }
 
+      // check insert
+      if (result.affectedRows === 0) {
+        return res.status(400).json({
+          message: "Không thể thêm sản phẩm",
+        });
+      }
+
       const productId = result.insertId;
 
+      // tạo lịch sử nhập
       if (Number(stock) > 0) {
-        const importSql = `INSERT INTO ImportHistory (productId, quantity, totalPrice, branchId, importDate)
+        const importSql = `INSERT INTO ImportHistory
+          (productId, quantity, totalPrice, branchId, importDate)
           VALUES (?, ?, ?, ?, NOW())`;
 
         database.query(
@@ -88,6 +105,13 @@ const updateProduct = (req, res) => {
     branchId,
   } = req.body;
 
+  // validate
+  if (!name || !price || stock === undefined || !branchId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin cập nhật",
+    });
+  }
+
   const importPrice = Number(importUnitPrice || 0) * Number(totalImported || 0);
 
   const sql = `UPDATE Product
@@ -100,16 +124,23 @@ const updateProduct = (req, res) => {
       name,
       price,
       stock,
-      image,
-      importUnitPrice,
-      totalImported,
+      image || "",
+      importUnitPrice || 0,
+      totalImported || 0,
       importPrice,
       branchId,
       id,
     ],
-    (err) => {
+    (err, result) => {
       if (err) {
         return res.status(500).json(err);
+      }
+
+      // check update
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          message: "Không tìm thấy sản phẩm",
+        });
       }
 
       res.json({
@@ -123,15 +154,31 @@ const updateProduct = (req, res) => {
 const deleteProduct = (req, res) => {
   const { id } = req.params;
 
-  database.query("DELETE FROM Product WHERE productId=?", [id], (err) => {
-    if (err) {
-      return res.status(500).json(err);
-    }
+  database.query(
+    "DELETE FROM Product WHERE productId=?",
+    [id],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
 
-    res.json({
-      message: "Xóa sản phẩm thành công",
-    });
-  });
+      // check delete
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          message: "Không tìm thấy sản phẩm",
+        });
+      }
+
+      res.json({
+        message: "Xóa sản phẩm thành công",
+      });
+    },
+  );
 };
 
-module.exports = { getProducts, createProduct, updateProduct, deleteProduct };
+module.exports = {
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+};

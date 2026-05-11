@@ -13,6 +13,13 @@ const getBranches = (req, res) => {
 const createBranch = (req, res) => {
   const { name, address, phone } = req.body;
 
+  // validate
+  if (!name) {
+    return res.status(400).json({
+      message: "Tên chi nhánh không được để trống",
+    });
+  }
+
   const sql = `INSERT INTO Branch (name,address,phone) VALUES(?,?,?)`;
 
   database.query(sql, [name, address, phone], (err) => {
@@ -30,13 +37,27 @@ const updateBranch = (req, res) => {
   const { id } = req.params;
   const { name, address, phone } = req.body;
 
+  // validate
+  if (!name) {
+    return res.status(400).json({
+      message: "Tên chi nhánh không được để trống",
+    });
+  }
+
   const sql = `UPDATE Branch
     SET name=?, address=?, phone=?
     WHERE branchId=?`;
 
-  database.query(sql, [name, address, phone, id], (err) => {
+  database.query(sql, [name, address, phone, id], (err, result) => {
     if (err) {
       return res.status(500).json(err);
+    }
+
+    // check branch tồn tại
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Chi nhánh không tồn tại",
+      });
     }
 
     res.json({
@@ -48,9 +69,16 @@ const updateBranch = (req, res) => {
 const deleteBranch = (req, res) => {
   const { id } = req.params;
 
-  database.query("DELETE FROM Branch WHERE branchId=?", [id], (err) => {
+  database.query("DELETE FROM Branch WHERE branchId=?", [id], (err, result) => {
     if (err) {
       return res.status(500).json(err);
+    }
+
+    // check branch tồn tại
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Chi nhánh không tồn tại",
+      });
     }
 
     res.json({
@@ -59,4 +87,9 @@ const deleteBranch = (req, res) => {
   });
 };
 
-module.exports = { getBranches, createBranch, updateBranch, deleteBranch };
+module.exports = {
+  getBranches,
+  createBranch,
+  updateBranch,
+  deleteBranch,
+};

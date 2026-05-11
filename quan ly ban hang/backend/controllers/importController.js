@@ -22,20 +22,38 @@ const getImports = (req, res) => {
 const createImport = (req, res) => {
   const { productId, quantity, totalPrice, branchId } = req.body;
 
+  // validate
+  if (!productId || !quantity || !branchId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin nhập kho",
+    });
+  }
+
   const sql = `INSERT INTO ImportHistory(productId, quantity, totalPrice, branchId, importDate)
     VALUES(?, ?, ?, ?, NOW())`;
 
-  database.query(sql, [productId, quantity, totalPrice, branchId], (err) => {
-    if (err) {
-      return res.status(500).json({
-        message: "Lỗi lưu lịch sử nhập",
-      });
-    }
+  database.query(
+    sql,
+    [productId, quantity, totalPrice, branchId],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          message: "Lỗi lưu lịch sử nhập",
+        });
+      }
 
-    res.json({
-      message: "Lưu lịch sử nhập thành công",
-    });
-  });
+      // check insert
+      if (result.affectedRows === 0) {
+        return res.status(400).json({
+          message: "Không thể lưu lịch sử nhập",
+        });
+      }
+
+      res.json({
+        message: "Lưu lịch sử nhập thành công",
+      });
+    },
+  );
 };
 
 module.exports = { getImports, createImport };

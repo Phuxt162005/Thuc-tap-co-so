@@ -4,6 +4,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
   const [cart, setCart] = useState([]);
   const [cash, setCash] = useState("");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // token
+  const token = localStorage.getItem("token");
 
   // thêm vào giỏ
   const addToCart = (product) => {
@@ -44,8 +48,23 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
   // thanh toán
   const checkout = async () => {
+    if (loading) return;
+    setLoading(true);
+
     if (cart.length === 0) {
       alert("Giỏ hàng trống");
+      return;
+    }
+
+    const invalidItem = cart.some(
+      (item) =>
+        !item.quantity ||
+        Number(item.quantity) <= 0 ||
+        Number(item.quantity) > Number(item.stock),
+    );
+
+    if (invalidItem) {
+      alert("Số lượng sản phẩm không hợp lệ");
       return;
     }
 
@@ -59,8 +78,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
       for (const item of cart) {
         const product = products.find((p) => p.productId === item.productId);
 
-        if (!product) continue;
-
+        if (!product) {
+          alert("Sản phẩm không tồn tại");
+          return;
+        }
         const newStock = Number(product.stock) - Number(item.quantity);
 
         if (newStock < 0) {
@@ -75,8 +96,8 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-
             body: JSON.stringify({
               name: product.name,
               price: Number(product.price || 0),
@@ -92,7 +113,6 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
             }),
           },
         );
-
         const data = await res.json();
 
         if (!res.ok) {
@@ -102,10 +122,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
       }
 
       // tạo hóa đơn
-      // tạo hóa đơn
       const employeeId = localStorage.getItem("employeeId");
-
-      const branchId = localStorage.getItem("branchId");
+      const filteredProducts = products.filter((p) =>
+        (p.name || "").toLowerCase().includes(search.trim().toLowerCase()),
+      );
 
       if (!employeeId) {
         alert("Không xác định nhân viên đăng nhập");
@@ -116,17 +136,13 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-
         body: JSON.stringify({
           employeeId: Number(employeeId),
-
           customerId: 1,
-
           total,
-
           branchId: Number(branchId),
-
           items: cart.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,
@@ -134,7 +150,6 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           })),
         }),
       });
-
       const orderData = await orderRes.json();
 
       if (!orderRes.ok) {
@@ -142,17 +157,33 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         return;
       }
       // reload products
-      const res1 = await fetch("http://localhost:5000/products");
-
+      const res1 = await fetch("http://localhost:5000/products", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if ([401, 403].includes(res1.status)) {
+        alert("Phiên đăng nhập hết hạn");
+        localStorage.clear();
+        window.location.reload();
+        return;
+      }
       const data1 = await res1.json();
-
       setProducts(data1);
 
       // reload orders
-      const res2 = await fetch("http://localhost:5000/orders");
-
+      const res2 = await fetch("http://localhost:5000/orders", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if ([401, 403].includes(res2.status)) {
+        alert("Phiên đăng nhập hết hạn");
+        localStorage.clear();
+        window.location.reload();
+        return;
+      }
       const data2 = await res2.json();
-
       setOrders(data2);
 
       // reset
@@ -168,13 +199,16 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
   };
 
   // tìm kiếm
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()),
+  const branchId = Number(localStorage.getItem("branchId"));
+  const filteredProducts = products.filter(
+    (p) =>
+      Number(p.branchId) === branchId &&
+      (p.name || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="container-grid">
-      {/* PRODUCT */}
+      {/* product */}
       <div>
         <input
           className="search-box"
@@ -234,7 +268,7 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
         </div>
       </div>
 
-      {/* CART */}
+      {/* cart */}
       <div className="cart-box">
         <h3>Giỏ hàng</h3>
 
@@ -274,8 +308,10 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
 
                     return;
                   }
-
-                  const qty = Math.min(Number(value || 1), i.stock);
+                  const qty = Math.max(
+                    1,
+                    Math.min(Number(value || 1), i.stock),
+                  );
 
                   setCart(
                     cart.map((item) =>
@@ -317,8 +353,12 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
           VNĐ
         </p>
 
-        <button className="btn btn-success" onClick={checkout}>
-          Thanh toán
+        <button
+          className="btn btn-success"
+          onClick={checkout}
+          disabled={loading}
+        >
+          {loading ? "Đang thanh toán..." : "Thanh toán"}
         </button>
       </div>
     </div>

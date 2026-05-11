@@ -6,10 +6,12 @@ const {
   updateProduct,
   deleteProduct,
 } = require("../controllers/productController");
+const auth = require("../middleware/auth");
+const authorize = require("../middleware/authorize");
 
-router.get("/", getProducts);
-router.post("/", createProduct);
-router.put("/:id", updateProduct);
-router.delete("/:id", deleteProduct);
+router.get("/", auth, authorize("manager", "employee"), getProducts);
+router.post("/", auth, authorize("manager"), createProduct);
+router.put("/:id", auth, authorize("manager", "employee"), updateProduct);
+router.delete("/:id", auth, authorize("manager"), deleteProduct);
 
 module.exports = router;

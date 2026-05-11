@@ -9,40 +9,53 @@ export default function Login({ setIsLogin, setRole }) {
 
   // xử lý đăng nhập
   const handleLogin = async () => {
-    try {
-      // clear localStorage cũ
-      localStorage.clear();
+    if (!username.trim() || !password.trim()) {
+      alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu");
+      return;
+    }
 
-      const res = await fetch("http://localhost:5000/login", {
+    try {
+      // clear dữ liệu login cũ
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
+      localStorage.removeItem("branchId");
+      localStorage.removeItem("employeeId");
+
+      const res = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username,
-          password,
+          username: username.trim(),
+          password: password.trim(),
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        alert(data.message || "Lỗi đăng nhập");
+        alert(data.message || "Sai tài khoản hoặc mật khẩu");
         return;
       }
 
-      // lưu user hiện tại
-      localStorage.setItem("role", data.role);
-      localStorage.setItem("username", data.username);
-      localStorage.setItem("branchId", data.branchId);
-      localStorage.setItem("employeeId", data.employeeId);
-      console.log("LOGIN USER:", data);
+      localStorage.setItem("token", data.token || "");
+      localStorage.setItem("role", data.role || "");
+      localStorage.setItem("username", data.username || "");
+      localStorage.setItem(
+        "branchId",
+        data.branchId ? String(data.branchId) : "",
+      );
+      localStorage.setItem(
+        "employeeId",
+        data.employeeId ? String(data.employeeId) : "",
+      );
 
       setRole(data.role);
       setIsLogin(true);
     } catch (err) {
       console.log(err);
-
       alert("Lỗi server");
     }
   };
@@ -63,7 +76,6 @@ export default function Login({ setIsLogin, setRole }) {
 
       <div className="login-container">
         <h1 className="login-title">Quản lý bán hàng</h1>
-
         <h2 className="login-subtitle">Đăng nhập</h2>
 
         {/* username */}
@@ -72,6 +84,11 @@ export default function Login({ setIsLogin, setRole }) {
           placeholder="Tên đăng nhập"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleLogin();
+            }
+          }}
         />
 
         {/* password */}
@@ -81,6 +98,11 @@ export default function Login({ setIsLogin, setRole }) {
           placeholder="Mật khẩu"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleLogin();
+            }
+          }}
         />
 
         {/* login */}
@@ -88,7 +110,7 @@ export default function Login({ setIsLogin, setRole }) {
           Login
         </button>
 
-        {/* link */}
+        {/* forgot password */}
         <div className="link-box">
           <span className="link" onClick={() => setForgotMode(true)}>
             Quên mật khẩu

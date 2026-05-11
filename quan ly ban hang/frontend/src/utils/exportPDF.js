@@ -1,7 +1,5 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-
-// import font
 import "../fonts/times-normal";
 
 export const exportPDF = (orders) => {
@@ -32,17 +30,12 @@ export const exportPDF = (orders) => {
 
     autoTable(doc, {
       startY: 40,
-
       head: [["Mã đơn", "Ngày", "Người tạo", "Sản phẩm", "Tổng tiền"]],
-
       body: tableData,
-
-      // QUAN TRỌNG
       styles: {
         font: "times",
         fontStyle: "normal",
       },
-
       headStyles: {
         font: "times",
         fontStyle: "normal",

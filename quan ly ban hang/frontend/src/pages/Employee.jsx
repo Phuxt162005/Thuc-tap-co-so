@@ -22,31 +22,44 @@ export default function Employee({ employees, setEmployees, branches }) {
 
   // edit
   const [editingId, setEditingId] = useState(null);
-
   const roleLogin = localStorage.getItem("role");
+
+  // token
+  const token = localStorage.getItem("token");
 
   // lấy tên chi nhánh
   const getBranchName = (id) => {
-    const b = branches.find((b) => Number(b.branchId) === Number(id));
-
+    const b = (branches || []).find((b) => Number(b.branchId) === Number(id));
     return b ? b.name : "";
   };
 
   // load employee
   const loadEmployees = async () => {
-    const res = await fetch("http://localhost:5000/employees");
+    try {
+      const res = await fetch("http://localhost:5000/employees", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
 
-    const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Không tải được nhân viên");
+        return;
+      }
 
-    setEmployees(data);
+      setEmployees(data);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // tìm kiếm
-  const filteredEmployees = employees.filter((e) => {
+  const filteredEmployees = (employees || []).filter((e) => {
     const keyword = search.toLowerCase();
 
     return (
-      e.name.toLowerCase().includes(keyword) ||
+      (e.name || "").toLowerCase().includes(keyword) ||
       getBranchName(e.branchId).toLowerCase().includes(keyword) ||
       (e.username || "").toLowerCase().includes(keyword)
     );
@@ -69,6 +82,7 @@ export default function Employee({ employees, setEmployees, branches }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name,
@@ -83,20 +97,21 @@ export default function Employee({ employees, setEmployees, branches }) {
           role: roleLogin === "admin" ? role : "employee",
         }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Lỗi");
+        alert(data.message || "Lỗi thêm nhân viên");
         return;
       }
 
+      // thêm payroll
       // thêm payroll
       if (salary) {
         await fetch("http://localhost:5000/payroll", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             employeeId: data.employeeId,
@@ -106,7 +121,6 @@ export default function Employee({ employees, setEmployees, branches }) {
           }),
         });
       }
-
       await loadEmployees();
 
       // reset
@@ -132,18 +146,21 @@ export default function Employee({ employees, setEmployees, branches }) {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name,
           dob: dob ? dob.toISOString().split("T")[0] : null,
           phone,
-          branchId: Number(branch),
+          branchId:
+            roleLogin === "manager"
+              ? Number(localStorage.getItem("branchId"))
+              : Number(branch),
           username,
           password,
           role,
         }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -156,6 +173,7 @@ export default function Employee({ employees, setEmployees, branches }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           employeeId: id,
@@ -164,12 +182,9 @@ export default function Employee({ employees, setEmployees, branches }) {
           year: new Date().getFullYear(),
         }),
       });
-
       await loadEmployees();
 
       setEditingId(null);
-
-      // reset
       setName("");
       setDob(null);
       setBranch("");
@@ -190,10 +205,18 @@ export default function Employee({ employees, setEmployees, branches }) {
     if (!window.confirm("Bạn có chắc muốn xóa?")) return;
 
     try {
-      await fetch(`http://localhost:5000/employees/${id}`, {
+      const res = await fetch(`http://localhost:5000/employees/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      const data = await res.json();
 
+      if (!res.ok) {
+        alert(data.message || "Lỗi xóa");
+        return;
+      }
       await loadEmployees();
 
       alert("Xóa thành công");
@@ -315,62 +338,65 @@ export default function Employee({ employees, setEmployees, branches }) {
             <th>Số điện thoại</th>
             <th>Chi nhánh</th>
             <th>Lương</th>
-
             {roleLogin === "admin" && <th>Username</th>}
             {roleLogin === "admin" && <th>Password</th>}
             {roleLogin === "admin" && <th>Vai trò</th>}
-
             <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
-          {filteredEmployees.map((e) => (
-            <tr key={e.employeeId}>
-              <td>{e.name}</td>
-
-              <td>
-                {e.dob ? new Date(e.dob).toLocaleDateString("vi-VN") : ""}
-              </td>
-
-              <td>{e.phone}</td>
-
-              <td>{getBranchName(e.branchId)}</td>
-
-              <td>{Number(e.basicSalary || 0).toLocaleString("vi-VN")} VNĐ</td>
-              {roleLogin === "admin" && <td>{e.username}</td>}
-              {roleLogin === "admin" && <td>{e.password}</td>}
-              {roleLogin === "admin" && (
-                <td>{e.role === "manager" ? "Quản lý" : "Nhân viên"}</td>
-              )}
-
-              <td>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setEditingId(e.employeeId);
-                    setName(e.name);
-                    setDob(e.dob ? new Date(e.dob) : null);
-                    setPhone(e.phone || "");
-                    setBranch(String(e.branchId));
-                    setSalary(e.basicSalary || "");
-                    setUsername(e.username || "");
-                    setPassword(e.password || "");
-                    setRole(e.role || "employee");
-                  }}
-                >
-                  Sửa
-                </button>
-
-                <button
-                  className="btn btn-danger"
-                  onClick={() => removeEmployee(e.employeeId)}
-                >
-                  Xóa
-                </button>
+          {filteredEmployees.length === 0 ? (
+            <tr>
+              <td colSpan={roleLogin === "admin" ? 8 : 6} className="td empty">
+                Không có nhân viên
               </td>
             </tr>
-          ))}
+          ) : (
+            filteredEmployees.map((e) => (
+              <tr key={e.employeeId}>
+                <td>{e.name}</td>
+                <td>
+                  {e.dob ? new Date(e.dob).toLocaleDateString("vi-VN") : ""}
+                </td>
+                <td>{e.phone}</td>
+                <td>{getBranchName(e.branchId)}</td>
+                <td>
+                  {Number(e.basicSalary || 0).toLocaleString("vi-VN")} VNĐ
+                </td>
+                {roleLogin === "admin" && <td>{e.username}</td>}
+                {roleLogin === "admin" && <td>{e.password}</td>}
+                {roleLogin === "admin" && (
+                  <td>{e.role === "manager" ? "Quản lý" : "Nhân viên"}</td>
+                )}
+                <td>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setEditingId(e.employeeId);
+                      setName(e.name);
+                      setDob(e.dob ? new Date(e.dob) : null);
+                      setPhone(e.phone || "");
+                      setBranch(String(e.branchId));
+                      setSalary(String(e.basicSalary || ""));
+                      setUsername(e.username || "");
+                      setPassword(e.password || "");
+                      setRole(e.role || "employee");
+                    }}
+                  >
+                    Sửa
+                  </button>
+
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => removeEmployee(e.employeeId)}
+                  >
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

@@ -7,10 +7,14 @@ function App() {
   const [role, setRole] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
     const savedRole = localStorage.getItem("role");
-    if (savedRole) {
+
+    if (token && savedRole) {
       setRole(savedRole);
       setIsLogin(true);
+    } else {
+      localStorage.clear();
     }
   }, []);
 

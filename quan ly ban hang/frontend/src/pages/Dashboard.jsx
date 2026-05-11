@@ -25,7 +25,8 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
 
-  const branchId = localStorage.getItem("branchId");
+  const branchId = Number(localStorage.getItem("branchId"));
+  const token = localStorage.getItem("token");
 
   // khi login
   useEffect(() => {
@@ -38,50 +39,70 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
   // load data
   useEffect(() => {
-    loadData();
-  }, []);
+    if (token && role) {
+      loadData();
+    }
+  }, [role]);
 
   const loadData = async () => {
     try {
-      // products
-      const productRes = await fetch(`${api}/products`);
-      const productData = await productRes.json();
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      const [productRes, orderRes, employeeRes, branchRes] = await Promise.all([
+        fetch("http://localhost:5000/products", { headers }),
+
+        fetch("http://localhost:5000/orders", { headers }),
+
+        fetch("http://localhost:5000/employees", { headers }),
+
+        fetch("http://localhost:5000/branches", { headers }),
+      ]);
+
+      // token hết hạn hoặc không hợp lệ
+      const unauthorized =
+        productRes.status === 401 ||
+        orderRes.status === 401 ||
+        employeeRes.status === 401 ||
+        branchRes.status === 401;
+
+      if (unauthorized) {
+        alert("Phiên đăng nhập đã hết hạn");
+        localStorage.clear();
+
+        setRole("");
+        setIsLogin(false);
+        return;
+      }
+
+      const products = productRes.ok ? await productRes.json() : [];
+      const orders = orderRes.ok ? await orderRes.json() : [];
+      const employees = employeeRes.ok ? await employeeRes.json() : [];
+      const branches = branchRes.ok ? await branchRes.json() : [];
 
       const filteredProducts =
         role === "admin"
-          ? productData
-          : productData.filter((p) => Number(p.branchId) === Number(branchId));
-
-      setProducts(filteredProducts);
-
-      // branches
-      const branchRes = await fetch(`${api}/branches`);
-      const branchData = await branchRes.json();
-      setBranches(branchData);
-
-      // employees
-      const employeeRes = await fetch(`${api}/employees`);
-      const employeeData = await employeeRes.json();
-
-      const filteredEmployees =
-        role === "admin"
-          ? employeeData
-          : employeeData.filter((e) => Number(e.branchId) === Number(branchId));
-
-      setEmployees(filteredEmployees);
-
-      // orders
-      const orderRes = await fetch(`${api}/orders`);
-      const orderData = await orderRes.json();
+          ? products
+          : products.filter((p) => Number(p.branchId) === Number(branchId));
 
       const filteredOrders =
         role === "admin"
-          ? orderData
-          : orderData.filter((o) => Number(o.branchId) === Number(branchId));
+          ? orders
+          : orders.filter((o) => Number(o.branchId) === Number(branchId));
 
+      const filteredEmployees =
+        role === "admin"
+          ? employees
+          : employees.filter((e) => Number(e.branchId) === Number(branchId));
+
+      setProducts(filteredProducts);
       setOrders(filteredOrders);
+      setEmployees(filteredEmployees);
+      setBranches(branches);
     } catch (err) {
       console.log(err);
+      alert("Lỗi tải dữ liệu");
     }
   };
 
@@ -123,8 +144,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
       if (!topProducts[item.productId]) {
         topProducts[item.productId] = 0;
       }
-
-      topProducts[item.productId] += item.quantity;
+      topProducts[item.productId] += Number(item.quantity || 0);
     });
   });
 
@@ -176,7 +196,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
           <div>
             <h2>Thông tin bán hàng</h2>
 
-            {/* DATE */}
+            {/* date*/}
             <div
               style={{
                 display: "flex",
@@ -221,7 +241,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
               </button>
             </div>
 
-            {/* CARD */}
+            {/* card */}
             <div className="card-container">
               <div className="card">
                 <h3>Doanh thu:</h3>

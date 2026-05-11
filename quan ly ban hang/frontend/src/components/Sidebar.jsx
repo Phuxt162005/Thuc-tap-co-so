@@ -6,17 +6,17 @@ export default function Sidebar({
   setIsLogin,
   role,
   setRole,
-  employees,
-  branches,
+  branches = [],
 }) {
-  const username = localStorage.getItem("username");
+  const branchId = Number(localStorage.getItem("branchId"));
 
-  const employee = employees?.find((e) => e.username === username);
+  const branch = branches.find((b) => Number(b.branchId) === branchId);
 
-  const branchName =
-    role === "admin"
-      ? "Admin"
-      : branches?.find((b) => b.branchId === employee?.branchId)?.name;
+  console.log("branchId:", branchId);
+  console.log("branches:", branches);
+  console.log("branch:", branch);
+
+  const branchName = role === "admin" ? "Admin" : branch?.name;
 
   const menuItems =
     role === "admin"
@@ -40,19 +40,25 @@ export default function Sidebar({
             { key: "inventory", label: "Kho" },
             { key: "report", label: "Báo cáo" },
           ];
+
   return (
-    <div className="sidebar" style={{ backgroundImage: `url(${bgrSidebar})` }}>
-      {/* phần trên */}
+    <div
+      className="sidebar"
+      style={{
+        backgroundImage: `url(${bgrSidebar})`,
+      }}
+    >
       <div>
         <h2>MENU</h2>
 
-        {role !== "admin" && (
-          <div style={{ marginBottom: "20px", color: "#fff" }}>
-            Chi nhánh: {branchName || "Không xác định"}
-          </div>
-        )}
-
-        {role === "admin" && <div>Admin</div>}
+        <div
+          style={{
+            marginBottom: "20px",
+            color: "#fff",
+          }}
+        >
+          {role === "admin" ? "Admin" : `Chi nhánh: ${branchName}`}
+        </div>
 
         <ul className="menu">
           {menuItems.map((item) => (
@@ -67,12 +73,10 @@ export default function Sidebar({
         </ul>
       </div>
 
-      {/* logout ở dưới */}
       <button
         className="logout-btn"
         onClick={() => {
-          localStorage.removeItem("role");
-          localStorage.removeItem("username");
+          localStorage.clear();
           setRole("");
           setIsLogin(false);
         }}

@@ -15,4 +15,8 @@ database.connect((err) => {
   }
 });
 
+database.on("error", (err) => {
+  console.log("Database error:", err);
+});
+
 module.exports = database;

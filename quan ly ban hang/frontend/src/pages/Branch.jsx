@@ -11,13 +11,28 @@ export default function Branch({ branches, setBranches, employees }) {
   // edit
   const [editingId, setEditingId] = useState(null);
 
+  // token
+  const token = localStorage.getItem("token");
+
   // load branch
   const loadBranches = async () => {
-    const res = await fetch("http://localhost:5000/branches");
+    try {
+      const res = await fetch("http://localhost:5000/branches", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
 
-    const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Không tải được chi nhánh");
+        return;
+      }
 
-    setBranches(data);
+      setBranches(data);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // thêm chi nhánh
@@ -32,21 +47,16 @@ export default function Branch({ branches, setBranches, employees }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name,
-          address,
-          phone,
-        }),
+        body: JSON.stringify({ name, address, phone }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
         alert(data.message || "Lỗi");
         return;
       }
-
       await loadBranches();
 
       setName("");
@@ -66,25 +76,19 @@ export default function Branch({ branches, setBranches, employees }) {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name,
-          address,
-          phone,
-        }),
+        body: JSON.stringify({ name, address, phone }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
         alert(data.message || "Lỗi cập nhật");
         return;
       }
-
       await loadBranches();
 
       setEditingId(null);
-
       setName("");
       setAddress("");
       setPhone("");
@@ -100,10 +104,18 @@ export default function Branch({ branches, setBranches, employees }) {
     if (!window.confirm("Bạn có chắc muốn xóa?")) return;
 
     try {
-      await fetch(`http://localhost:5000/branches/${id}`, {
+      const res = await fetch(`http://localhost:5000/branches/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      const data = await res.json();
 
+      if (!res.ok) {
+        alert(data.message || "Lỗi xóa");
+        return;
+      }
       await loadBranches();
 
       alert("Xóa thành công");
@@ -113,10 +125,9 @@ export default function Branch({ branches, setBranches, employees }) {
   };
 
   // tìm kiếm
-  const filteredBranches = branches.filter((b) => {
+  const filteredBranches = (branches || []).filter((b) => {
     const keyword = search.toLowerCase();
 
-    // tìm theo role
     const hasRole =
       keyword === "quản lý" || keyword === "manager"
         ? count(b.branchId, "manager") > 0
@@ -125,7 +136,7 @@ export default function Branch({ branches, setBranches, employees }) {
           : false;
 
     return (
-      b.name.toLowerCase().includes(keyword) ||
+      (b.name || "").toLowerCase().includes(keyword) ||
       (b.address || "").toLowerCase().includes(keyword) ||
       (b.phone || "").toLowerCase().includes(keyword) ||
       hasRole
@@ -145,7 +156,7 @@ export default function Branch({ branches, setBranches, employees }) {
     <div>
       <h2>Chi nhánh</h2>
 
-      {/* FORM */}
+      {/* form */}
       <div className="form-box">
         <input
           className="input"
@@ -184,7 +195,7 @@ export default function Branch({ branches, setBranches, employees }) {
 
       <hr />
 
-      {/* SEARCH */}
+      {/* search */}
       <div className="form-box">
         <input
           className="input"
@@ -213,18 +224,14 @@ export default function Branch({ branches, setBranches, employees }) {
 
       <hr />
 
-      {/* TABLE */}
+      {/* table */}
       <table className="table">
         <thead>
           <tr>
             <th className="th">Tên chi nhánh</th>
-
             <th className="th">Địa chỉ</th>
-
             <th className="th">SĐT</th>
-
             <th className="th">Nhân viên</th>
-
             <th className="th">Action</th>
           </tr>
         </thead>
@@ -240,27 +247,20 @@ export default function Branch({ branches, setBranches, employees }) {
             filteredBranches.map((b) => (
               <tr key={b.branchId}>
                 <td className="td">{b.name}</td>
-
                 <td className="td">{b.address || "Chưa có"}</td>
-
                 <td className="td">{b.phone || "Chưa có"}</td>
-
                 <td className="td">
                   QL: {count(b.branchId, "manager")}
                   <br />
                   NV: {count(b.branchId, "employee")}
                 </td>
-
                 <td className="td">
                   <button
                     className="btn btn-primary"
                     onClick={() => {
                       setEditingId(b.branchId);
-
                       setName(b.name);
-
                       setAddress(b.address || "");
-
                       setPhone(b.phone || "");
                     }}
                   >

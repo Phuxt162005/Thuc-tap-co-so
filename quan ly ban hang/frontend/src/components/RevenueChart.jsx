@@ -12,22 +12,32 @@ export default function RevenueChart({ orders }) {
   if (!orders || orders.length === 0) {
     return <div>Không có dữ liệu</div>;
   }
+
   const revenueByDate = {};
 
   orders.forEach((o) => {
+    if (!o.date) return;
+
     const date = new Date(o.date).toLocaleDateString("vi-VN");
 
     if (!revenueByDate[date]) {
       revenueByDate[date] = 0;
     }
 
-    revenueByDate[date] += Number(o.total);
+    revenueByDate[date] += Number(o.total || 0);
   });
 
-  const chartData = Object.keys(revenueByDate).map((date) => ({
-    date,
-    revenue: revenueByDate[date],
-  }));
+  // sort theo ngày tăng dần
+  const chartData = Object.keys(revenueByDate)
+    .map((date) => ({
+      date,
+      revenue: revenueByDate[date],
+    }))
+    .sort(
+      (a, b) =>
+        new Date(a.date.split("/").reverse().join("-")) -
+        new Date(b.date.split("/").reverse().join("-")),
+    );
 
   return (
     <div style={{ width: "100%", height: 300 }}>
@@ -38,7 +48,11 @@ export default function RevenueChart({ orders }) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis />
-          <Tooltip />
+          <Tooltip
+            formatter={(value) =>
+              `${Number(value).toLocaleString("vi-VN")} VNĐ`
+            }
+          />
           <Line type="monotone" dataKey="revenue" />
         </LineChart>
       </ResponsiveContainer>

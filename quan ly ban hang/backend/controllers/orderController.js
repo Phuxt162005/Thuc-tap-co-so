@@ -47,6 +47,13 @@ const getOrders = (req, res) => {
 const createOrder = (req, res) => {
   const { employeeId, customerId, total, items, branchId } = req.body;
 
+  // validate
+  if (!employeeId || !customerId || !branchId || !items || items.length === 0) {
+    return res.status(400).json({
+      message: "Thông tin đơn hàng không hợp lệ",
+    });
+  }
+
   const sql = `INSERT INTO Invoice(date, employeeId, customerId, total, branchId)
     VALUES(NOW(), ?, ?, ?, ?)`;
 
@@ -58,13 +65,14 @@ const createOrder = (req, res) => {
         return res.status(500).json(err);
       }
 
-      const invoiceId = result.insertId;
-
-      if (!items || items.length === 0) {
-        return res.json({
-          invoiceId,
+      // check insert invoice
+      if (result.affectedRows === 0) {
+        return res.status(400).json({
+          message: "Không thể tạo hóa đơn",
         });
       }
+
+      const invoiceId = result.insertId;
 
       const values = items.map((item) => [
         invoiceId,
@@ -76,9 +84,16 @@ const createOrder = (req, res) => {
       database.query(
         `INSERT INTO InvoiceDetail (invoiceId, productId, quantity, price) VALUES ?`,
         [values],
-        (detailErr) => {
+        (detailErr, detailResult) => {
           if (detailErr) {
             return res.status(500).json(detailErr);
+          }
+
+          // check insert detail
+          if (detailResult.affectedRows === 0) {
+            return res.status(400).json({
+              message: "Không thể tạo chi tiết hóa đơn",
+            });
           }
 
           res.json({

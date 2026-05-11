@@ -3,34 +3,26 @@ import backgrImg from "../assets/img/back-ground-login.jpg";
 
 export default function ForgotPassword({ setForgotMode }) {
   const [username, setUsername] = useState("");
-
   const [phone, setPhone] = useState("");
 
   const handleForgotPassword = async () => {
-    if (!username || !phone) {
+    if (!username.trim() || !phone.trim()) {
       alert("Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
     try {
-      const res = await fetch("http://localhost:5000/forgot-password", {
+      const res = await fetch("http://localhost:5000/auth/forgot-password", {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
-        body: JSON.stringify({
-          username,
-          phone,
-        }),
+        body: JSON.stringify({ username, phone }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
         alert(data.message || "Không tìm thấy tài khoản");
-
         return;
       }
 
@@ -39,6 +31,7 @@ export default function ForgotPassword({ setForgotMode }) {
       setForgotMode(false);
     } catch (err) {
       console.log(err);
+      alert("Lỗi server");
     }
   };
 
@@ -59,13 +52,24 @@ export default function ForgotPassword({ setForgotMode }) {
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleForgotPassword();
+            }
+          }}
         />
 
         <input
           className="input"
+          type="tel"
           placeholder="Số điện thoại"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleForgotPassword();
+            }
+          }}
         />
 
         <button className="btn btn-primary" onClick={handleForgotPassword}>

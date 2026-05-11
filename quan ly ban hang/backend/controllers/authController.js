@@ -6,6 +6,13 @@ const generateToken = require("../utils/token");
 const login = (req, res) => {
   const { username, password } = req.body;
 
+  // validate
+  if (!username || !password) {
+    return res.status(400).json({
+      message: "Vui lòng nhập username và password",
+    });
+  }
+
   const sql = `SELECT u.*, e.branchId
     FROM User u
     LEFT JOIN Employee e ON u.employeeId = e.employeeId
@@ -26,9 +33,18 @@ const login = (req, res) => {
 
     const user = result[0];
 
-    const isMatch =
-      password === user.password ||
-      (await bcrypt.compare(password, user.password));
+    // fix compare password
+    let isMatch = false;
+
+    if (password === user.password) {
+      isMatch = true;
+    } else {
+      try {
+        isMatch = await bcrypt.compare(password, user.password);
+      } catch (err) {
+        isMatch = false;
+      }
+    }
 
     if (!isMatch) {
       return res.status(401).json({
@@ -52,6 +68,13 @@ const login = (req, res) => {
 // forgot password
 const forgotPassword = (req, res) => {
   const { username, phone } = req.body;
+
+  // validate
+  if (!username || !phone) {
+    return res.status(400).json({
+      message: "Vui lòng nhập đầy đủ thông tin",
+    });
+  }
 
   const sql = `SELECT u.password
     FROM User u

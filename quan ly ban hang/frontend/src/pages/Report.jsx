@@ -1,21 +1,21 @@
 import { useState } from "react";
 
 export default function Report({ orders, products }) {
-  // DATE FILTER
+  // date filter
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // SEARCH EMPLOYEE
+  // search employee
   const [employeeSearch, setEmployeeSearch] = useState("");
 
-  // FILTER ORDERS
+  // filter order
   const filteredOrders = orders.filter((o) => {
     // lọc tên người tạo
     const employeeMatch =
-      !employeeSearch ||
+      !employeeSearch.trim() ||
       (o.employeeName || "")
         .toLowerCase()
-        .includes(employeeSearch.toLowerCase());
+        .includes(employeeSearch.trim().toLowerCase());
 
     if (!employeeMatch) {
       return false;
@@ -26,12 +26,15 @@ export default function Report({ orders, products }) {
       return true;
     }
 
-    const orderDate = new Date(o.date);
+    const orderDate = new Date(
+      new Date(o.date).toLocaleString("en-US", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
+    );
 
     // từ ngày
     if (fromDate) {
       const start = new Date(fromDate);
-
       if (orderDate < start) {
         return false;
       }
@@ -40,14 +43,11 @@ export default function Report({ orders, products }) {
     // đến ngày
     if (toDate) {
       const end = new Date(toDate);
-
       end.setHours(23, 59, 59, 999);
-
       if (orderDate > end) {
         return false;
       }
     }
-
     return true;
   });
 
@@ -61,7 +61,7 @@ export default function Report({ orders, products }) {
   let totalImport = 0;
 
   filteredOrders.forEach((order) => {
-    order.items.forEach((item) => {
+    (order.items || []).forEach((item) => {
       const product = products.find((p) => p.productId === item.productId);
 
       if (product) {
@@ -78,7 +78,7 @@ export default function Report({ orders, products }) {
     <div>
       <h2>Báo cáo</h2>
 
-      {/* FILTER */}
+      {/* filter */}
       <div
         style={{
           display: "flex",
@@ -91,7 +91,6 @@ export default function Report({ orders, products }) {
         {/* từ ngày */}
         <div>
           <label>Từ ngày:</label>
-
           <br />
 
           <input
@@ -105,7 +104,6 @@ export default function Report({ orders, products }) {
         {/* đến ngày */}
         <div>
           <label>Đến ngày:</label>
-
           <br />
 
           <input
@@ -119,7 +117,6 @@ export default function Report({ orders, products }) {
         {/* tìm người tạo đơn */}
         <div>
           <label>Người tạo đơn:</label>
-
           <br />
 
           <input
@@ -144,7 +141,7 @@ export default function Report({ orders, products }) {
         </button>
       </div>
 
-      {/* REPORT */}
+      {/* report */}
       <div
         style={{
           display: "grid",
@@ -156,14 +153,12 @@ export default function Report({ orders, products }) {
         {/* tổng đơn */}
         <div className="card">
           <h3>Tổng đơn</h3>
-
           <p className="card-number">{filteredOrders.length}</p>
         </div>
 
         {/* tổng nhập */}
         <div className="card">
           <h3>Tổng tiền nhập</h3>
-
           <p
             className="card-number"
             style={{
@@ -177,7 +172,6 @@ export default function Report({ orders, products }) {
         {/* tổng bán */}
         <div className="card">
           <h3>Tổng tiền bán</h3>
-
           <p
             className="card-number"
             style={{
@@ -191,7 +185,6 @@ export default function Report({ orders, products }) {
         {/* lợi nhuận */}
         <div className="card">
           <h3>Lãi</h3>
-
           <p
             className="card-number"
             style={{
@@ -240,7 +233,7 @@ export default function Report({ orders, products }) {
 
             <hr />
 
-            {o.items.map((item, index) => (
+            {(o.items || []).map((item, index) => (
               <div
                 key={index}
                 style={{

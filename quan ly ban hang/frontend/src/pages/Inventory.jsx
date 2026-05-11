@@ -4,6 +4,7 @@ export default function Inventory({ products, setProducts }) {
   const [search, setSearch] = useState("");
   const [quantity, setQuantity] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productSearch, setProductSearch] = useState("");
 
   // sort
   const [nameSort, setNameSort] = useState("asc");
@@ -13,6 +14,12 @@ export default function Inventory({ products, setProducts }) {
   const [importHistory, setImportHistory] = useState([]);
   const [importDate, setImportDate] = useState("");
 
+  const role = localStorage.getItem("role");
+  const branchId = Number(localStorage.getItem("branchId"));
+
+  // token
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
     loadProducts();
     loadImports();
@@ -21,8 +28,17 @@ export default function Inventory({ products, setProducts }) {
   // load products
   const loadProducts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/products");
+      const res = await fetch("http://localhost:5000/products", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Lỗi tải sản phẩm");
+        return;
+      }
 
       setProducts(data);
     } catch (err) {
@@ -33,8 +49,17 @@ export default function Inventory({ products, setProducts }) {
   // load imports
   const loadImports = async () => {
     try {
-      const res = await fetch("http://localhost:5000/imports");
+      const res = await fetch("http://localhost:5000/imports", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Lỗi tải lịch sử nhập");
+        return;
+      }
 
       setImportHistory(data);
     } catch (err) {
@@ -58,9 +83,7 @@ export default function Inventory({ products, setProducts }) {
       }
 
       const newStock = Number(selectedProduct.stock || 0) + qty;
-
       const newTotalImported = Number(selectedProduct.totalImported || 0) + qty;
-
       const newImportPrice =
         Number(selectedProduct.importUnitPrice || 0) * newTotalImported;
 
@@ -71,6 +94,7 @@ export default function Inventory({ products, setProducts }) {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify({
@@ -78,18 +102,13 @@ export default function Inventory({ products, setProducts }) {
             price: selectedProduct.price,
             stock: newStock,
             image: selectedProduct.image || "",
-
             importUnitPrice: selectedProduct.importUnitPrice || 0,
-
             totalImported: newTotalImported,
-
             importPrice: newImportPrice,
-
             branchId: selectedProduct.branchId,
           }),
         },
       );
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -102,19 +121,16 @@ export default function Inventory({ products, setProducts }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
 
         body: JSON.stringify({
           productId: selectedProduct.productId,
-
           quantity: qty,
-
           totalPrice: qty * Number(selectedProduct.importUnitPrice || 0),
-
           branchId: selectedProduct.branchId,
         }),
       });
-
       await loadProducts();
       await loadImports();
 
@@ -130,8 +146,10 @@ export default function Inventory({ products, setProducts }) {
   };
 
   // search
-  let filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()),
+  let filteredProducts = products.filter(
+    (p) =>
+      Number(p.branchId) === branchId &&
+      (p.name || "").toLowerCase().includes(productSearch.toLowerCase()),
   );
 
   // sort name
@@ -139,7 +157,6 @@ export default function Inventory({ products, setProducts }) {
     if (nameSort === "asc") {
       return a.name.localeCompare(b.name);
     }
-
     return b.name.localeCompare(a.name);
   });
 
@@ -154,16 +171,17 @@ export default function Inventory({ products, setProducts }) {
 
   // filter import by day
   const filteredImports = importHistory.filter((item) => {
+    if (Number(item.branchId) !== branchId) {
+      return false;
+    }
+
     if (!importDate) return true;
 
     const itemDate = new Date(item.importDate);
-
-    // yyyy-mm-dd theo local máy
     const itemLocalDate = itemDate.toLocaleDateString("sv-SE");
 
     return itemLocalDate === importDate;
   });
-
   // total import by selected day
   const totalImportByDate = filteredImports.reduce(
     (sum, item) => sum + Number(item.totalPrice || 0),
@@ -180,28 +198,34 @@ export default function Inventory({ products, setProducts }) {
     <div>
       <h2>Kho</h2>
 
-      <h3>Nhập hàng</h3>
+      {role === "manager" && (
+        <>
+          <h3>Nhập hàng</h3>
 
-      <div className="form-box">
-        <input
-          className="input"
-          placeholder="Tìm kiếm sản phẩm"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+          <div className="form-box">
+            <input
+              className="input"
+              placeholder="Tìm kiếm sản phẩm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-        <input
-          className="input"
-          type="number"
-          placeholder="Số lượng nhập"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
+            <input
+              className="input"
+              type="number"
+              placeholder="Số lượng nhập"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
 
-        <button className="btn btn-primary" onClick={importStock}>
-          Nhập kho
-        </button>
-      </div>
+            <button className="btn btn-primary" onClick={importStock}>
+              Nhập kho
+            </button>
+          </div>
+
+          <hr />
+        </>
+      )}
 
       <hr />
 
@@ -276,11 +300,18 @@ export default function Inventory({ products, setProducts }) {
           onChange={(e) => setStockSort(e.target.value)}
         >
           <option value="default">Tồn kho mặc định</option>
-
           <option value="asc">Tồn kho tăng dần</option>
-
           <option value="desc">Tồn kho giảm dần</option>
         </select>
+      </div>
+
+      <div className="form-box">
+        <input
+          className="input"
+          placeholder="Tìm kiếm sản phẩm trong kho"
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+        />
       </div>
 
       {/* date filter */}
@@ -375,15 +406,12 @@ export default function Inventory({ products, setProducts }) {
                   }}
                 >
                   {p.image && <img src={p.image} alt="" width="50" />}
-
                   {p.name}
                 </div>
               </td>
 
               <td>{Number(p.importUnitPrice || 0).toLocaleString()} VNĐ</td>
-
               <td>{p.totalImported || 0}</td>
-
               <td>{Number(p.importPrice || 0).toLocaleString()} VNĐ</td>
 
               <td>{p.stock}</td>
@@ -410,11 +438,8 @@ export default function Inventory({ products, setProducts }) {
           {filteredImports.map((item) => (
             <tr key={item.importId}>
               <td>{new Date(item.importDate).toLocaleString("vi-VN")}</td>
-
               <td className="td">{item.name}</td>
-
               <td>{item.quantity}</td>
-
               <td>{Number(item.totalPrice).toLocaleString()} VNĐ</td>
             </tr>
           ))}
