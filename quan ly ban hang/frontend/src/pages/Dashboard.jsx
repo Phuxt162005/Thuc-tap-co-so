@@ -255,7 +255,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 <p className="card-number">{filteredOrders.length}</p>
               </div>
 
-              {/* TOP PRODUCT */}
+              {/* top product */}
               <div className="top-box">
                 <h3>Top sản phẩm bán chạy</h3>
 
@@ -310,7 +310,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
               </div>
             </div>
 
-            {/* CHART */}
+            {/* chart */}
             {filteredOrders.length > 0 && (
               <RevenueChart orders={filteredOrders} />
             )}
@@ -319,15 +319,17 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
               <TopProductChart orders={filteredOrders} products={products} />
             )}
 
-            <button
-              className="btn btn-primary"
-              style={{
-                marginTop: "20px",
-              }}
-              onClick={() => exportPDF(filteredOrders)}
-            >
-              Xuất PDF
-            </button>
+            {role === "manager" && (
+              <button
+                className="btn btn-primary"
+                style={{
+                  marginTop: "20px",
+                }}
+                onClick={() => exportPDF(filteredOrders)}
+              >
+                Xuất PDF
+              </button>
+            )}
           </div>
         );
     }

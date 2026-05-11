@@ -7,4 +7,12 @@ const database = mysql.createConnection({
   database: "CSDL_quanlybanhang",
 });
 
+database.connect((err) => {
+  if (err) {
+    console.log("Không kết nối được CSDL:", err);
+  } else {
+    console.log("Kết nối CSDL thành công");
+  }
+});
+
 module.exports = database;
