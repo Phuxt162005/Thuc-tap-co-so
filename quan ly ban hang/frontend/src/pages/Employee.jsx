@@ -48,7 +48,14 @@ export default function Employee({ employees, setEmployees, branches }) {
         return;
       }
 
-      setEmployees(data);
+      const branchId = Number(localStorage.getItem("branchId"));
+
+      const filteredData =
+        roleLogin === "admin"
+          ? data
+          : data.filter((e) => Number(e.branchId) === branchId);
+
+      setEmployees(filteredData);
     } catch (err) {
       console.log(err);
     }
