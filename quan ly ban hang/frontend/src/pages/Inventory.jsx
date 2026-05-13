@@ -146,6 +146,13 @@ export default function Inventory({ products, setProducts }) {
   };
 
   // search
+  const searchedProducts = products.filter(
+    (p) =>
+      Number(p.branchId) === branchId &&
+      (p.name || "").toLowerCase().includes(search.toLowerCase()),
+  );
+
+  // search table inventory
   let filteredProducts = products.filter(
     (p) =>
       Number(p.branchId) === branchId &&
@@ -190,7 +197,8 @@ export default function Inventory({ products, setProducts }) {
 
   // total import warehouse
   const totalInventoryImport = filteredProducts.reduce(
-    (sum, p) => sum + Number(p.importPrice || 0),
+    (sum, p) =>
+      sum + Number(p.importUnitPrice || 0) * Number(p.totalImported || 0),
     0,
   );
 
@@ -230,49 +238,86 @@ export default function Inventory({ products, setProducts }) {
       <hr />
 
       {/* select product */}
-      {search && (
+      {/* select product */}
+      {search.trim() && (
         <div
           style={{
             background: "white",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
+            border: "1px solid #ddd",
+            borderRadius: "12px",
+            marginTop: "10px",
             marginBottom: "20px",
-            maxHeight: "200px",
+            maxHeight: "280px",
             overflowY: "auto",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
           }}
         >
-          {filteredProducts.map((p) => (
+          {searchedProducts.length > 0 ? (
+            searchedProducts.map((p) => (
+              <div
+                key={p.productId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "14px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #f2f2f2",
+                  background:
+                    selectedProduct?.productId === p.productId
+                      ? "#eaf4ff"
+                      : "white",
+                }}
+                onClick={() => {
+                  setSelectedProduct(p);
+                  setSearch(p.name);
+                }}
+              >
+                {p.image && (
+                  <img
+                    src={p.image}
+                    alt=""
+                    style={{
+                      width: "55px",
+                      height: "55px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                    }}
+                  />
+                )}
+
+                <div>
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {p.name}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#666",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Tồn kho: {p.stock}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
             <div
-              key={p.productId}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px",
-                cursor: "pointer",
-                borderBottom: "1px solid #eee",
-              }}
-              onClick={() => {
-                setSelectedProduct(p);
-                setSearch(p.name);
+                padding: "16px",
+                textAlign: "center",
+                color: "#999",
               }}
             >
-              {p.image && (
-                <img
-                  src={p.image}
-                  alt=""
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    objectFit: "cover",
-                    borderRadius: "6px",
-                  }}
-                />
-              )}
-
-              <span>{p.name}</span>
+              Không tìm thấy sản phẩm
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -410,7 +455,12 @@ export default function Inventory({ products, setProducts }) {
                 </div>
               </td>
 
-              <td>{Number(p.importUnitPrice || 0).toLocaleString()} VNĐ</td>
+              <td>
+                {(
+                  Number(p.importUnitPrice || 0) * Number(p.totalImported || 0)
+                ).toLocaleString()}{" "}
+                VNĐ
+              </td>
               <td>{p.totalImported || 0}</td>
               <td>{Number(p.importPrice || 0).toLocaleString()} VNĐ</td>
 

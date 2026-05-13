@@ -49,12 +49,12 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
   // thanh toán
   const checkout = async () => {
     if (loading) return;
-    setLoading(true);
 
     if (cart.length === 0) {
       alert("Giỏ hàng trống");
       return;
     }
+    setLoading(true);
 
     const invalidItem = cart.some(
       (item) =>
@@ -189,12 +189,15 @@ export default function Sales({ products, setProducts, orders, setOrders }) {
       // reset
       setCart([]);
       setCash("");
+      setLoading(false);
 
       alert("Thanh toán thành công!");
     } catch (err) {
       console.log(err);
 
       alert("Lỗi thanh toán");
+    } finally {
+      setLoading(false);
     }
   };
 

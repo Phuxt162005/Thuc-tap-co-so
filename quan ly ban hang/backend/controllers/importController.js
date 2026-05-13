@@ -2,10 +2,22 @@ const database = require("../database");
 
 // lấy lịch sử nhập
 const getImports = (req, res) => {
-  const sql = `SELECT i.*, p.name, p.image, p.importUnitPrice
+  const sql = `
+    SELECT
+      i.importId,
+      i.productId,
+      i.quantity,
+      i.branchId,
+      i.importDate,
+      p.name,
+      p.image,
+      p.importUnitPrice,
+      (i.quantity * p.importUnitPrice) AS totalPrice
     FROM ImportHistory i
-    JOIN Product p ON i.productId = p.productId
-    ORDER BY i.importDate DESC`;
+    JOIN Product p
+      ON i.productId = p.productId
+    ORDER BY i.importDate DESC
+  `;
 
   database.query(sql, (err, result) => {
     if (err) {

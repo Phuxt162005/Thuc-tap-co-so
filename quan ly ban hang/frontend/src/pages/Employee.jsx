@@ -65,10 +65,23 @@ export default function Employee({ employees, setEmployees, branches }) {
   const filteredEmployees = (employees || []).filter((e) => {
     const keyword = search.toLowerCase();
 
+    // manager
+    if (roleLogin === "manager") {
+      return (
+        (e.name || "").toLowerCase().includes(keyword) ||
+        (e.phone || "").includes(keyword) ||
+        getBranchName(e.branchId).toLowerCase().includes(keyword)
+      );
+    }
+
+    // admin
     return (
       (e.name || "").toLowerCase().includes(keyword) ||
+      (e.phone || "").includes(keyword) ||
       getBranchName(e.branchId).toLowerCase().includes(keyword) ||
-      (e.username || "").toLowerCase().includes(keyword)
+      (e.username || "").toLowerCase().includes(keyword) ||
+      (e.password || "").toLowerCase().includes(keyword) ||
+      (e.role || "").toLowerCase().includes(keyword)
     );
   });
 
@@ -332,6 +345,43 @@ export default function Employee({ employees, setEmployees, branches }) {
             Thêm
           </button>
         )}
+      </div>
+
+      {/* search */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          margin: "20px 0",
+          gap: "10px",
+        }}
+      >
+        <input
+          className="input"
+          style={{ width: "300px" }}
+          placeholder={
+            roleLogin === "admin" ? "Tìm kiếm user" : "Tìm kiếm nhân viên"
+          }
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+
+        <button
+          className="btn btn-primary"
+          onClick={() => setSearch(searchInput)}
+        >
+          Tìm kiếm
+        </button>
+
+        <button
+          className="btn btn-danger"
+          onClick={() => {
+            setSearch("");
+            setSearchInput("");
+          }}
+        >
+          Xóa
+        </button>
       </div>
 
       <hr />

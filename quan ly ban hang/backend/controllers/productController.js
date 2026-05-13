@@ -154,26 +154,65 @@ const updateProduct = (req, res) => {
 const deleteProduct = (req, res) => {
   const { id } = req.params;
 
-  database.query(
-    "DELETE FROM Product WHERE productId=?",
-    [id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
-
-      // check delete
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          message: "Không tìm thấy sản phẩm",
-        });
-      }
-
-      res.json({
-        message: "Xóa sản phẩm thành công",
+  database.beginTransaction((err) => {
+    if (err) {
+      return res.status(500).json({
+        message: err.message,
       });
-    },
-  );
+    }
+
+    // xóa lịch sử nhập
+    database.query(
+      `DELETE FROM ImportHistory WHERE productId=?`,
+      [id],
+      (importErr) => {
+        if (importErr) {
+          return database.rollback(() => {
+            res.status(500).json({
+              message: importErr.sqlMessage,
+            });
+          });
+        }
+
+        // xóa sản phẩm
+        database.query(
+          `DELETE FROM Product WHERE productId=?`,
+          [id],
+          (productErr, result) => {
+            if (productErr) {
+              return database.rollback(() => {
+                res.status(500).json({
+                  message: productErr.sqlMessage,
+                });
+              });
+            }
+
+            if (result.affectedRows === 0) {
+              return database.rollback(() => {
+                res.status(404).json({
+                  message: "Không tìm thấy sản phẩm",
+                });
+              });
+            }
+
+            database.commit((commitErr) => {
+              if (commitErr) {
+                return database.rollback(() => {
+                  res.status(500).json({
+                    message: commitErr.message,
+                  });
+                });
+              }
+
+              res.json({
+                message: "Xóa sản phẩm thành công",
+              });
+            });
+          },
+        );
+      },
+    );
+  });
 };
 
 module.exports = {

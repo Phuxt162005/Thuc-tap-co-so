@@ -196,7 +196,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
           <div>
             <h2>Thông tin bán hàng</h2>
 
-            {/* date*/}
+            {/* date */}
             <div
               style={{
                 display: "flex",
@@ -243,6 +243,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
             {/* card */}
             <div className="card-container">
+              {/* doanh thu */}
               <div className="card">
                 <h3>Doanh thu:</h3>
 
@@ -251,6 +252,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 </p>
               </div>
 
+              {/* sản phẩm */}
               <div
                 className="card"
                 style={{
@@ -263,6 +265,7 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
                 <p className="card-number">{products.length}</p>
               </div>
 
+              {/* đơn hàng */}
               <div
                 className="card"
                 style={{
@@ -274,60 +277,126 @@ export default function Dashboard({ setIsLogin, role, setRole }) {
 
                 <p className="card-number">{filteredOrders.length}</p>
               </div>
+            </div>
 
-              {/* top product */}
-              <div className="top-box">
-                <h3>Top sản phẩm bán chạy</h3>
+            {/* top product */}
+            <div
+              style={{
+                background: "white",
+                borderRadius: "20px",
+                padding: "25px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                marginTop: "20px",
+              }}
+            >
+              <h2
+                style={{
+                  textAlign: "center",
+                  marginBottom: "25px",
+                }}
+              >
+                Top sản phẩm bán chạy
+              </h2>
 
-                <div className="top-content">
-                  {sortedProducts.length === 0 ? (
-                    <p className="empty">Chưa có dữ liệu</p>
-                  ) : (
-                    sortedProducts.map(([id, qty], index) => {
-                      const product = products.find(
-                        (p) => p.productId === Number(id),
-                      );
+              {sortedProducts.length === 0 ? (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "#999",
+                  }}
+                >
+                  Chưa có dữ liệu
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(220px, 280px))",
+                    justifyContent: "center",
+                    gap: "20px",
+                  }}
+                >
+                  {sortedProducts.slice(0, 5).map(([id, qty], index) => {
+                    const product = products.find(
+                      (p) => p.productId === Number(id),
+                    );
 
-                      return (
+                    return (
+                      <div
+                        key={id}
+                        style={{
+                          background: "#f8f9fc",
+                          borderRadius: "16px",
+                          padding: "18px",
+                          textAlign: "center",
+                          border:
+                            index === 0
+                              ? "2px solid gold"
+                              : "1px solid #e5e7eb",
+                        }}
+                      >
+                        {/* rank */}
                         <div
-                          key={id}
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "15px",
-                            marginBottom: "15px",
+                            fontWeight: "bold",
+                            color: index === 0 ? "#ff9800" : "#1976d2",
+                            marginBottom: "10px",
+                            fontSize: "18px",
                           }}
                         >
-                          {product?.image && (
-                            <img
-                              src={product.image}
-                              alt=""
-                              style={{
-                                width: "60px",
-                                height: "60px",
-                                objectFit: "cover",
-                                borderRadius: "10px",
-                              }}
-                            />
-                          )}
-
-                          <div>
-                            <div
-                              style={{
-                                fontWeight: "bold",
-                              }}
-                            >
-                              #{index + 1} {product?.name}
-                            </div>
-
-                            <div>Đã bán: {qty}</div>
-                          </div>
+                          #{index + 1}
                         </div>
-                      );
-                    })
-                  )}
+
+                        {/* image */}
+                        {product?.image && (
+                          <img
+                            src={product.image}
+                            alt=""
+                            style={{
+                              width: "90px",
+                              height: "90px",
+                              objectFit: "contain",
+                              marginBottom: "12px",
+                            }}
+                          />
+                        )}
+
+                        {/* name */}
+                        <div
+                          style={{
+                            fontWeight: "600",
+                            minHeight: "60px",
+                            lineHeight: "1.4",
+                            fontSize: "15px",
+                          }}
+                        >
+                          {product?.name}
+                        </div>
+
+                        {/* sold */}
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            color: "#666",
+                          }}
+                        >
+                          Đã bán:
+                          <span
+                            style={{
+                              fontWeight: "bold",
+                              color: "#1976d2",
+                              marginLeft: "5px",
+                            }}
+                          >
+                            {qty}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
             </div>
 
             {/* chart */}
